@@ -76,6 +76,8 @@ def generate_launch_description():
 
         Node(package="robot_car_sim", executable="map_marker", parameters=[sim_time]),
 
+        Node(package="robot_car_sim", executable="cmd_vel_timeout", parameters=[sim_time]),
+
         Node(
             package="foxglove_bridge",
             executable="foxglove_bridge",

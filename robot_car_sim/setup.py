@@ -29,6 +29,7 @@ setup(
         "console_scripts": [
             "wheel_debug = robot_car_sim.wheel_debug:main",
             "map_marker = robot_car_sim.map_marker:main",
+            "cmd_vel_timeout = robot_car_sim.cmd_vel_timeout:main",
         ],
     },
 )
