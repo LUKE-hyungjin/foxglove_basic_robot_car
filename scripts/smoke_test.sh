@@ -25,17 +25,17 @@ docker compose build --quiet || exit 1
 docker compose up -d 2>/dev/null || exit 1
 
 echo
-echo "waiting for the first /scan ..."
+echo "waiting for /scan, /map and /wheel_debug/error ..."
+ready='timeout 3 ros2 topic echo --once /scan --field header.frame_id && ros2 topic list | grep -q /map && ros2 topic list | grep -q /wheel_debug/error'
 for _ in $(seq 60); do
-  docker compose exec -T sim bash -c "source /ws/install/setup.bash && timeout 3 ros2 topic echo --once /scan --field header.frame_id" \
-    >/dev/null 2>&1 && break
+  docker compose exec -T sim bash -c "source /ws/install/setup.bash && $ready" >/dev/null 2>&1 && break
   sleep 2
 done
 
 in_sim "python3 -m pytest -q /ws/src/robot_car_sim/test"
 in_sim "ros2 topic list"
-in_sim "timeout 8 ros2 topic hz /scan | tail -2; true"
-in_sim "timeout 5 ros2 topic hz /joint_states | tail -2; true"
+in_sim "timeout 8 ros2 topic hz /scan 2>/dev/null | tail -2; true"
+in_sim "timeout 5 ros2 topic hz /joint_states 2>/dev/null | tail -2; true"
 
 reset_robot
 in_sim "python3 /ws/scripts/check_sim.py scan"
