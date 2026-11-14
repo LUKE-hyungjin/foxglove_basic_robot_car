@@ -11,7 +11,6 @@ Reads <export_dir>/*.urdf and <export_dir>/meshes/*.stl, then:
      and writes them into robot_car_sim/config/robot.yaml
 Every change is printed. Running it twice gives the same result.
 """
-import math
 import re
 import shutil
 import struct
@@ -93,40 +92,22 @@ def fix_wheel_axes(robot, mesh_dir):
             print(f"fix     {joint_name} axis 0 -1 0 -> 0 1 0")
 
 
-def fix_wheel_collisions(robot, mesh_dir):
-    """Use a true cylinder for wheel collisions: the faceted mesh wheel sits a
-    hair above the skids and gets almost no grip."""
-    for joint_name in (LEFT_WHEEL_JOINT, RIGHT_WHEEL_JOINT):
-        link = find(robot, "link", find(robot, "joint", joint_name).find("child").get("link"))
-        lows, highs = mesh_bounds_in_link(link, mesh_dir)
-        center = [round((lo + hi) / 2, 5) for lo, hi in zip(lows, highs)]
-        radius = round((highs[2] - lows[2]) / 2, 4)
-        width = round(highs[1] - lows[1], 4)
-        collision = link.find("collision")
-        collision.find("origin").attrib.update(
-            xyz=" ".join(map(str, center)), rpy=f"{math.pi / 2} 0 0")  # cylinder axis Z -> Y
-        geometry = collision.find("geometry")
-        geometry.clear()
-        ET.SubElement(geometry, "cylinder", radius=str(radius), length=str(width))
-        print(f"fix     {link.get('name')} collision mesh -> cylinder r={radius} width={width}")
-
-
 SUPPORT_LINK = "support_1"
 SKID_TIP_RADIUS = 0.01
 SKID_LIFT = 0.001
 
 
 def fix_support_collision(robot, mesh_dir):
-    """Replace the skid mesh (~10k triangles touching the floor; /scan dropped from
-    10.0 to 9.2 Hz) with one small sphere per skid foot. The spheres sit
-    1 mm above the floor: if skids and wheels all touch z=0, rigid physics lets
-    the skids carry the weight and the wheels slip."""
+    """The skids and the wheels all touch z=0 in the export. Rigid physics then lets
+    the skids carry the weight and the wheels slip (1 m on /odom, 0.47 m real).
+    Replace the skid collision with one small sphere per foot, 1 mm above the
+    floor, so the wheels carry the weight. Spheres instead of the ~10k-triangle
+    mesh also keep /scan at 10 Hz (9.2 Hz with the mesh)."""
     link = find(robot, "link", SUPPORT_LINK)
     points = mesh_points_in_link(link, mesh_dir)
     floor = min(p[2] for p in points)
     feet = [p for p in points if p[2] < floor + 0.001]
-    old_collision = link.find("collision")
-    link.remove(old_collision)
+    link.remove(link.find("collision"))
     for side in (1, -1):
         foot = [p for p in feet if p[0] * side > 0]
         x = round(sum(p[0] for p in foot) / len(foot), 4)
@@ -138,7 +119,7 @@ def fix_support_collision(robot, mesh_dir):
               f"z={z} ({SKID_LIFT * 1000:.0f} mm above floor)")
 
 
-FIXES = [fix_wheel_axes, fix_wheel_collisions, fix_support_collision]
+FIXES = [fix_wheel_axes, fix_support_collision]
 
 
 # Steps ---------------------------------------------------------------------------
@@ -147,7 +128,7 @@ def copy_meshes(export_dir):
     target.mkdir(exist_ok=True)
     for stl in sorted((export_dir / "meshes").glob("*.stl")):
         shutil.copy2(stl, target / stl.name)
-        print(f"copy    {stl.relative_to(REPO)} -> {(target / stl.name).relative_to(REPO)}")
+        print(f"copy    {stl} -> {(target / stl.name).relative_to(REPO)}")
 
 
 def rewrite_mesh_paths(robot):
@@ -194,25 +175,26 @@ def set_yaml_value(text, section, key, value):
 def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__)
-    export_dir = Path(sys.argv[1]).resolve()
+    export_dir = Path(sys.argv[1])
     urdf_files = list(export_dir.glob("*.urdf"))
     if len(urdf_files) != 1:
         sys.exit(f"expected exactly one .urdf in {export_dir}, found {len(urdf_files)}")
 
     tree = ET.parse(urdf_files[0])
     robot = tree.getroot()
-    print(f"read    {urdf_files[0].relative_to(REPO)}")
+    print(f"read    {urdf_files[0]}")
 
     copy_meshes(export_dir)
+    mesh_dir = PACKAGE / "meshes"
     rewrite_mesh_paths(robot)
     for fix in FIXES:
-        fix(robot, export_dir / "meshes")
+        fix(robot, mesh_dir)
 
     ET.indent(tree, space="  ")
     tree.write(OUTPUT_URDF, encoding="utf-8", xml_declaration=True)
     print(f"write   {OUTPUT_URDF.relative_to(REPO)}")
 
-    sizes = measure(robot, PACKAGE / "meshes")
+    sizes = measure(robot, mesh_dir)
     text = ROBOT_YAML.read_text()
     text = set_yaml_value(text, "wheel", "radius", sizes["radius"])
     text = set_yaml_value(text, "wheel", "separation", sizes["separation"])

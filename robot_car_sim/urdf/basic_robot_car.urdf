@@ -66,9 +66,9 @@
       <material name="고무-연질" />
     </visual>
     <collision>
-      <origin xyz="-1e-05 -0.0125 0.0" rpy="1.5707963267948966 0 0" />
+      <origin xyz="-0.0 0.1 -0.05" rpy="0 0 0" />
       <geometry>
-        <cylinder radius="0.05" length="0.025" />
+        <mesh filename="package://robot_car_sim/meshes/right_wheel_1.stl" scale="0.001 0.001 0.001" />
       </geometry>
     </collision>
   </link>
@@ -86,9 +86,9 @@
       <material name="고무-연질" />
     </visual>
     <collision>
-      <origin xyz="-1e-05 0.0125 0.0" rpy="1.5707963267948966 0 0" />
+      <origin xyz="-0.0 -0.1 -0.05" rpy="0 0 0" />
       <geometry>
-        <cylinder radius="0.05" length="0.025" />
+        <mesh filename="package://robot_car_sim/meshes/left_wheel_1.stl" scale="0.001 0.001 0.001" />
       </geometry>
     </collision>
   </link>
