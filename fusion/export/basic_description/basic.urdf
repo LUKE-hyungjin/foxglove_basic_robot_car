@@ -1,0 +1,169 @@
+<?xml version="1.0" ?>
+<robot name="basic">
+  <material name="ABS(흰색)">
+    <color rgba="0.965 0.965 0.953 1.0"/>
+  </material>
+  <material name="고무-연질">
+    <color rgba="0.153 0.153 0.153 1.0"/>
+  </material>
+  <material name="HJ_b">
+    <color rgba="0.0 0.004 0.0 1.0"/>
+  </material>
+  <material name="강철-새틴">
+    <color rgba="0.627 0.627 0.627 1.0"/>
+  </material>
+
+  <transmission name="right_wheel_joint_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="right_wheel_joint">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="right_wheel_joint_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  
+  <transmission name="left_wheel_joint_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="left_wheel_joint">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="left_wheel_joint_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0.004085192340368757 1.670370971974307e-17 0.05333856405787093" rpy="0 0 0"/>
+      <mass value="2.308623413731432"/>
+      <inertia ixx="0.007907" iyy="0.008326" izz="0.014731" ixy="0.0" iyz="0.0" ixz="-0.000354"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="ABS(흰색)"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/base_link.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="right_wheel_1">
+    <inertial>
+      <origin xyz="-8.396061623727748e-18 -0.012499999999999997 0.0" rpy="0 0 0"/>
+      <mass value="0.1826050729899067"/>
+      <inertia ixx="0.000124" iyy="0.000228" izz="0.000124" ixy="0.0" iyz="0.0" ixz="-0.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0 0.1 -0.05" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/right_wheel_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="고무-연질"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0 0.1 -0.05" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/right_wheel_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="left_wheel_1">
+    <inertial>
+      <origin xyz="-8.396061623727748e-18 0.012499999999999997 0.0" rpy="0 0 0"/>
+      <mass value="0.1826050729899067"/>
+      <inertia ixx="0.000124" iyy="0.000228" izz="0.000124" ixy="-0.0" iyz="0.0" ixz="-0.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0 -0.1 -0.05" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/left_wheel_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="고무-연질"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0 -0.1 -0.05" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/left_wheel_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="lidar_1">
+    <inertial>
+      <origin xyz="-1.3877787807814457e-17 0.0 0.012500000000000011" rpy="0 0 0"/>
+      <mass value="0.2043262409463674"/>
+      <inertia ixx="8.2e-05" iyy="8.2e-05" izz="0.000144" ixy="-0.0" iyz="0.0" ixz="0.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.05 -0.0 -0.11" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/lidar_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="HJ_b"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.05 -0.0 -0.11" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/lidar_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <link name="support_1">
+    <inertial>
+      <origin xyz="4.1489019029536826e-17 1.7370069300366082e-18 -0.01062499999999996" rpy="0 0 0"/>
+      <mass value="0.16055665579869713"/>
+      <inertia ixx="1.2e-05" iyy="0.000915" izz="0.000915" ixy="-0.0" iyz="0.0" ixz="-0.0"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0.0 -0.0 -0.025" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/support_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="강철-새틴"/>
+    </visual>
+    <collision>
+      <origin xyz="-0.0 -0.0 -0.025" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="meshes/support_1.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="right_wheel_joint" type="continuous">
+    <origin xyz="0.0 -0.1 0.05" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="right_wheel_1"/>
+    <axis xyz="0.0 -1.0 0.0"/>
+  </joint>
+  
+  <joint name="left_wheel_joint" type="continuous">
+    <origin xyz="0.0 0.1 0.05" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="left_wheel_1"/>
+    <axis xyz="0.0 1.0 0.0"/>
+  </joint>
+  
+  <joint name="lidar_joint" type="fixed">
+    <origin xyz="0.05 0.0 0.11" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="lidar_1"/>
+  </joint>
+  
+  <joint name="support_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.025" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="support_1"/>
+  </joint>
+  
+</robot>
