@@ -118,15 +118,16 @@ python3 /ws/scripts/check_sim.py drive 0.2 0 5
 ```
 
 ```text
-             wheel  measured  expected    error  (rad/s, mean of 4586 samples)
-  left_wheel_joint     4.000     4.000   -0.000
- right_wheel_joint     4.000     4.000   -0.000
-...
-/ground_truth/odom: ... moved 1.001 m, turned +0.0 deg
+cmd_vel linear.x=0.2 m/s angular.z=0.0 rad/s for 5.0 s sim time
+             wheel  measured  expected    error  (rad/s, mean of 3999 samples)
+  left_wheel_joint     3.997     4.000   -0.003
+ right_wheel_joint     3.997     4.000   -0.003
+             /odom: start x=+0.000 y=-0.000  end x=+0.999 y=-0.000 yaw=-0.0 deg  moved 0.999 m, turned -0.0 deg
+/ground_truth/odom: start x=+0.000 y=-0.000  end x=+1.001 y=+0.000 yaw=+0.0 deg  moved 1.001 m, turned +0.0 deg
 PASS
 ```
 
-바퀴 속도 4.000 rad/s는 0.2 m/s를 바퀴 반지름 0.05 m로 나눈 값입니다.
+기대 속도 4.000 rad/s는 0.2 m/s를 바퀴 반지름 0.05 m로 나눈 값입니다. 측정 속도는 실행할 때마다 3.997–4.000 rad/s 사이에서 조금씩 다릅니다.
 
 ## 전체 점검 한 번에 돌리기
 
