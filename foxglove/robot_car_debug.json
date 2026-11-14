@@ -1,0 +1,272 @@
+{
+  "configById": {
+    "3D!robot": {
+      "followTf": "base_link",
+      "followMode": "follow-pose",
+      "cameraState": {
+        "distance": 4,
+        "perspective": true,
+        "phi": 50,
+        "thetaOffset": 45,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.01,
+        "far": 5000
+      },
+      "scene": {
+        "transforms": {
+          "showLabel": false,
+          "axisScale": 0.3
+        }
+      },
+      "transforms": {},
+      "topics": {
+        "/scan": {
+          "visible": true,
+          "pointSize": 4,
+          "colorMode": "colormap",
+          "colorField": "range",
+          "colorMap": "turbo"
+        },
+        "/map": {
+          "visible": true
+        },
+        "/odom": {
+          "visible": true,
+          "color": "#1f77b4"
+        },
+        "/ground_truth/odom": {
+          "visible": true,
+          "color": "#d62728"
+        }
+      },
+      "layers": {
+        "grid": {
+          "layerId": "foxglove.Grid",
+          "instanceId": "grid",
+          "label": "Grid",
+          "visible": true,
+          "frameLocked": true,
+          "frameId": "world",
+          "size": 8,
+          "divisions": 16,
+          "lineWidth": 1,
+          "color": "#888888",
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ]
+        },
+        "robot": {
+          "layerId": "foxglove.Urdf",
+          "instanceId": "robot",
+          "label": "Robot (Fusion)",
+          "visible": true,
+          "frameLocked": true,
+          "sourceType": "topic",
+          "topic": "/robot_description",
+          "url": "",
+          "filePath": "",
+          "parameter": "",
+          "framePrefix": "",
+          "displayMode": "auto",
+          "fallbackColor": "#ffffff",
+          "showAxis": false,
+          "axisScale": 1,
+          "showOutlines": true,
+          "opacity": 1,
+          "order": 2
+        }
+      },
+      "imageMode": {}
+    },
+    "Plot!wheelspeed": {
+      "paths": [
+        {
+          "value": "/joint_states.velocity[0]",
+          "label": "left measured",
+          "color": "#1f77b4",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/wheel_debug/expected.velocity[0]",
+          "label": "left expected",
+          "color": "#9ecae9",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/joint_states.velocity[1]",
+          "label": "right measured",
+          "color": "#d62728",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/wheel_debug/expected.velocity[1]",
+          "label": "right expected",
+          "color": "#f4a3a3",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 30,
+      "yAxisLabel": "wheel speed [rad/s]"
+    },
+    "Plot!wheelerror": {
+      "paths": [
+        {
+          "value": "/wheel_debug/error.velocity[0]",
+          "label": "left error",
+          "color": "#1f77b4",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/wheel_debug/error.velocity[1]",
+          "label": "right error",
+          "color": "#d62728",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 30,
+      "yAxisLabel": "measured - expected [rad/s]"
+    },
+    "Plot!odomvstruth": {
+      "paths": [
+        {
+          "value": "/odom.pose.pose.position.x",
+          "label": "odom x",
+          "color": "#1f77b4",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/ground_truth/odom.pose.pose.position.x",
+          "label": "true x",
+          "color": "#9ecae9",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/odom.pose.pose.position.y",
+          "label": "odom y",
+          "color": "#d62728",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/ground_truth/odom.pose.pose.position.y",
+          "label": "true y",
+          "color": "#f4a3a3",
+          "enabled": true,
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 30,
+      "yAxisLabel": "position [m]"
+    },
+    "Teleop!drive": {
+      "topic": "/cmd_vel",
+      "publishRate": 10,
+      "upButton": {
+        "field": "linear-x",
+        "value": 0.2
+      },
+      "downButton": {
+        "field": "linear-x",
+        "value": -0.2
+      },
+      "leftButton": {
+        "field": "angular-z",
+        "value": 0.8
+      },
+      "rightButton": {
+        "field": "angular-z",
+        "value": -0.8
+      }
+    },
+    "RawMessages!scan": {
+      "topicPath": "/scan",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "expansion": "none"
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": {
+    "direction": "row",
+    "splitPercentage": 55,
+    "first": "3D!robot",
+    "second": {
+      "direction": "column",
+      "splitPercentage": 66,
+      "first": {
+        "direction": "column",
+        "splitPercentage": 33,
+        "first": "Plot!wheelspeed",
+        "second": {
+          "direction": "column",
+          "first": "Plot!wheelerror",
+          "second": "Plot!odomvstruth"
+        }
+      },
+      "second": {
+        "direction": "row",
+        "splitPercentage": 40,
+        "first": "Teleop!drive",
+        "second": "RawMessages!scan"
+      }
+    }
+  }
+}

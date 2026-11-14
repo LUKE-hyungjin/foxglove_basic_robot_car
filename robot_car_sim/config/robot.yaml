@@ -1,23 +1,16 @@
-# Single source of truth for robot geometry. Read by the xacro (xacro.load_yaml)
-# and by wheel_debug, so the URDF and the expected-wheel-speed math can't drift.
-# Units: meters, kilograms, radians, Hz. Replace with Fusion-measured values.
-chassis:
-  length: 0.30
-  width: 0.16
-  height: 0.06
-  mass: 1.5
-  ground_clearance: 0.025
+# Single source of truth for the numbers the simulation needs. Read by the xacro
+# (xacro.load_yaml) and by the launch file for wheel_debug, so the DiffDrive plugin
+# and the expected-wheel-speed math always agree.
+# Units: meters, radians, Hz.
+#
+# wheel and lidar.z_offset are measured from the Fusion meshes and written by
+#   python3 tools/import_fusion_urdf.py fusion/export/basic_description
 wheel:
-  radius: 0.035
-  width: 0.025
-  mass: 0.10
-  separation: 0.20
-  x_offset: 0.06
-caster:
-  radius: 0.0175
-  x_offset: -0.11
+  radius: 0.05
+  separation: 0.225
 lidar:
-  z_offset: 0.05
+  # Height of the scan plane above the lidar_1 frame (center of the lidar body).
+  z_offset: 0.0125
   samples: 360
   range_min: 0.12
   range_max: 8.0

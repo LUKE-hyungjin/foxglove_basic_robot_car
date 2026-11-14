@@ -1,0 +1,92 @@
+<?xml version="1.0"?>
+<!--
+  The robot = the Fusion 360 export (basic_robot_car.urdf, made by
+  tools/import_fusion_urdf.py) + the Gazebo parts below. Numbers come from
+  config/robot.yaml.
+
+  Try it on its own:  xacro robot_car.urdf.xacro > robot_car.urdf
+-->
+<robot name="basic" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find robot_car_sim)/urdf/basic_robot_car.urdf"/>
+
+  <xacro:property name="robot" value="${xacro.load_yaml('$(find robot_car_sim)/config/robot.yaml')}"/>
+  <xacro:property name="wheel" value="${robot['wheel']}"/>
+  <xacro:property name="lidar" value="${robot['lidar']}"/>
+
+  <!-- Rubber wheels grip; the steel skids must slide or they drag against the drive. -->
+  <gazebo reference="left_wheel_1">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+  </gazebo>
+  <gazebo reference="right_wheel_1">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+  </gazebo>
+  <gazebo reference="support_1">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+
+  <gazebo reference="lidar_1">
+    <sensor name="lidar" type="gpu_lidar">
+      <!-- Scan from the middle of the lidar body, not from its base. -->
+      <pose>0 0 ${lidar['z_offset']} 0 0 0</pose>
+      <topic>scan</topic>
+      <!-- Gazebo merges fixed-joint links into base_link; this keeps the
+           scan's frame_id as lidar_1. -->
+      <gz_frame_id>lidar_1</gz_frame_id>
+      <always_on>true</always_on>
+      <update_rate>${lidar['update_rate']}</update_rate>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>${lidar['samples']}</samples>
+            <resolution>1</resolution>
+            <!-- Stop one step short of +pi so the first and last beams don't overlap. -->
+            <min_angle>${-pi}</min_angle>
+            <max_angle>${pi - 2 * pi / lidar['samples']}</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>${lidar['range_min']}</min>
+          <max>${lidar['range_max']}</max>
+          <resolution>0.01</resolution>
+        </range>
+      </lidar>
+    </sensor>
+  </gazebo>
+
+  <gazebo>
+    <!-- Turns /cmd_vel into wheel speeds and publishes wheel odometry (odom -> base_link). -->
+    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>${wheel['separation']}</wheel_separation>
+      <wheel_radius>${wheel['radius']}</wheel_radius>
+      <topic>/cmd_vel</topic>
+      <odom_topic>/odom</odom_topic>
+      <tf_topic>/tf</tf_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_link</child_frame_id>
+      <odom_publish_frequency>30</odom_publish_frequency>
+    </plugin>
+
+    <!-- Measured wheel angles and speeds. Default is every physics step (1000 Hz),
+         far more than a plot needs. -->
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <topic>/joint_states</topic>
+      <update_rate>50</update_rate>
+    </plugin>
+
+    <!-- Ground truth: the true pose straight from the simulator, in the world frame.
+         Its TF goes to a topic that is not bridged, so it can't fight wheel odometry. -->
+    <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
+      <odom_frame>world</odom_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+      <odom_topic>/ground_truth/odom</odom_topic>
+      <tf_topic>/ground_truth/tf</tf_topic>
+      <odom_publish_frequency>30</odom_publish_frequency>
+    </plugin>
+  </gazebo>
+</robot>

@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!--
+  Ground plane + sun + the Blender arena. The robot is spawned separately.
+
+  Try it on its own (no robot), from the robot_car_sim folder:
+    GZ_SIM_RESOURCE_PATH=$PWD/models gz sim -s -r --headless-rendering worlds/arena.sdf
+-->
+<sdf version="1.9">
+  <world name="arena">
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <!-- Renders the gpu_lidar. ogre2 works headless through EGL. -->
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <!-- Lets ros_gz_sim "create" spawn the robot into this world. -->
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>20 20</size></plane></geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Walls and obstacles from blender/make_map.py. model:// is looked up in GZ_SIM_RESOURCE_PATH. -->
+    <model name="arena">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><mesh><uri>model://arena/meshes/arena.stl</uri></mesh></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><mesh><uri>model://arena/meshes/arena.stl</uri></mesh></geometry>
+          <material>
+            <ambient>0.9 0.6 0.3 1</ambient>
+            <diffuse>0.9 0.6 0.3 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>

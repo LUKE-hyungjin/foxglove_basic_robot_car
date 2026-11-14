@@ -2,3 +2,7 @@ todo.md
 build/
 install/
 log/
+docs/_captures/
+__pycache__/
+.pytest_cache/
+*.egg-info/
