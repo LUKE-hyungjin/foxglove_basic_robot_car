@@ -65,18 +65,21 @@ def generate_launch_description():
             parameters=[sim_time],
         ),
 
+        # These three never read the clock, so they skip use_sim_time: with it, each
+        # node receives every /clock message (one per 1 ms physics step) and burns
+        # about a third of a CPU doing nothing.
         Node(
             package="robot_car_sim",
             executable="wheel_debug",
             parameters=[{
                 "wheel_radius": robot["wheel"]["radius"],
                 "wheel_separation": robot["wheel"]["separation"],
-            }, sim_time],
+            }],
         ),
 
-        Node(package="robot_car_sim", executable="map_marker", parameters=[sim_time]),
+        Node(package="robot_car_sim", executable="map_marker"),
 
-        Node(package="robot_car_sim", executable="cmd_vel_timeout", parameters=[sim_time]),
+        Node(package="robot_car_sim", executable="cmd_vel_timeout"),
 
         Node(
             package="foxglove_bridge",
