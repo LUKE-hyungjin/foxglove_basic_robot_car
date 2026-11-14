@@ -29,6 +29,7 @@
         "far": 5000
       },
       "scene": {
+        "meshUpAxis": "z_up",
         "transforms": {
           "showLabel": false,
           "axisScale": 0.3

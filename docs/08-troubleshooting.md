@@ -43,6 +43,10 @@ python3 scripts/check_bridge.py
 
 `fetchAsset ... bytes` 줄이 두 개 있으면 브리지는 정상입니다. 그래도 안 보이면 3D 패널 설정에서 `/map` 토픽과 로봇 모델 레이어가 켜져 있는지 확인하세요.
 
+### 경기장이 90° 누워 있고 바퀴가 이상하게 돎
+
+3D 패널이 STL 메시를 Y축이 위인 것으로 읽고 있습니다. Gazebo 안의 로봇과 맵은 정상입니다. 3D 패널 설정의 **Scene > Mesh up axis**를 **Z-up**으로 바꾸고, Foxglove를 다시 불러오세요(Cmd+R). `foxglove/robot_car_debug.json` 레이아웃은 이 값을 이미 Z-up으로 설정합니다.
+
 ### Teleop 버튼을 눌러도 로봇이 움직이지 않음
 
 Teleop 패널의 토픽이 `/cmd_vel`인지 확인하세요. 컨테이너 안에서 명령이 들어오는지 봅니다.
