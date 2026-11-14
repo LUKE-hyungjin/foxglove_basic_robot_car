@@ -1,0 +1,199 @@
+<?xml version="1.0"?>
+<!--
+  Basic Robot Car: two driven wheels, one rear caster ball, one 2D lidar.
+  Every number comes from config/robot.yaml.
+
+  Try it on its own:
+    xacro robot_car.urdf.xacro > robot_car.urdf
+    xacro robot_car.urdf.xacro use_fusion_meshes:=true
+-->
+<robot name="robot_car" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- true: draw the robot with meshes exported from Fusion 360 (meshes/*.stl).
+       Collisions stay as simple shapes either way, which keeps physics stable. -->
+  <xacro:arg name="use_fusion_meshes" default="false"/>
+  <xacro:property name="use_fusion_meshes" value="$(arg use_fusion_meshes)"/>
+  <xacro:property name="mesh_dir" value="package://robot_car_sim/meshes"/>
+
+  <xacro:property name="robot" value="${xacro.load_yaml('$(find robot_car_sim)/config/robot.yaml')}"/>
+  <xacro:property name="chassis" value="${robot['chassis']}"/>
+  <xacro:property name="wheel" value="${robot['wheel']}"/>
+  <xacro:property name="caster" value="${robot['caster']}"/>
+  <xacro:property name="lidar" value="${robot['lidar']}"/>
+
+  <!-- base_link is on the ground under the wheel axle midpoint, so the chassis
+       center sits behind it by wheel x_offset. -->
+  <xacro:property name="chassis_x" value="${-wheel['x_offset']}"/>
+  <xacro:property name="chassis_z" value="${chassis['ground_clearance'] + chassis['height'] / 2}"/>
+  <xacro:property name="chassis_top_z" value="${chassis['ground_clearance'] + chassis['height']}"/>
+
+  <xacro:macro name="box_inertia" params="mass x y z">
+    <inertial>
+      <mass value="${mass}"/>
+      <inertia ixx="${mass * (y*y + z*z) / 12}" ixy="0" ixz="0"
+               iyy="${mass * (x*x + z*z) / 12}" iyz="0"
+               izz="${mass * (x*x + y*y) / 12}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- Chassis ................................................................ -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="${chassis_x} 0 ${chassis_z}"/>
+      <geometry>
+        <xacro:if value="${use_fusion_meshes}">
+          <mesh filename="${mesh_dir}/chassis.stl"/>
+        </xacro:if>
+        <xacro:unless value="${use_fusion_meshes}">
+          <box size="${chassis['length']} ${chassis['width']} ${chassis['height']}"/>
+        </xacro:unless>
+      </geometry>
+      <material name="blue"><color rgba="0.2 0.4 0.9 1"/></material>
+    </visual>
+    <collision>
+      <origin xyz="${chassis_x} 0 ${chassis_z}"/>
+      <geometry>
+        <box size="${chassis['length']} ${chassis['width']} ${chassis['height']}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="${chassis_x} 0 ${chassis_z}"/>
+      <mass value="${chassis['mass']}"/>
+      <inertia ixx="${chassis['mass'] * (chassis['width']**2 + chassis['height']**2) / 12}" ixy="0" ixz="0"
+               iyy="${chassis['mass'] * (chassis['length']**2 + chassis['height']**2) / 12}" iyz="0"
+               izz="${chassis['mass'] * (chassis['length']**2 + chassis['width']**2) / 12}"/>
+    </inertial>
+  </link>
+
+  <!-- Driven wheels ........................................................... -->
+  <!-- The joint is rolled -90 deg about X, so the wheel's Z axis (its spin axis
+       and the cylinder's axis) points along +Y. Positive velocity drives forward. -->
+  <xacro:macro name="drive_wheel" params="side y">
+    <link name="${side}_wheel">
+      <visual>
+        <geometry>
+          <xacro:if value="${use_fusion_meshes}">
+            <mesh filename="${mesh_dir}/wheel.stl"/>
+          </xacro:if>
+          <xacro:unless value="${use_fusion_meshes}">
+            <cylinder radius="${wheel['radius']}" length="${wheel['width']}"/>
+          </xacro:unless>
+        </geometry>
+        <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="${wheel['radius']}" length="${wheel['width']}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="${wheel['mass']}"/>
+        <inertia ixx="${wheel['mass'] * (3 * wheel['radius']**2 + wheel['width']**2) / 12}" ixy="0" ixz="0"
+                 iyy="${wheel['mass'] * (3 * wheel['radius']**2 + wheel['width']**2) / 12}" iyz="0"
+                 izz="${wheel['mass'] * wheel['radius']**2 / 2}"/>
+      </inertial>
+    </link>
+    <joint name="${side}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${side}_wheel"/>
+      <origin xyz="0 ${y} ${wheel['radius']}" rpy="${-pi / 2} 0 0"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:drive_wheel side="left" y="${wheel['separation'] / 2}"/>
+  <xacro:drive_wheel side="right" y="${-wheel['separation'] / 2}"/>
+
+  <!-- Rear caster: a ball fixed to the chassis with zero friction, so it slides. -->
+  <link name="caster_link">
+    <visual>
+      <geometry><sphere radius="${caster['radius']}"/></geometry>
+      <material name="grey"><color rgba="0.6 0.6 0.6 1"/></material>
+    </visual>
+    <collision>
+      <geometry><sphere radius="${caster['radius']}"/></geometry>
+    </collision>
+  </link>
+  <joint name="caster_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="caster_link"/>
+    <origin xyz="${chassis_x + caster['x_offset']} 0 ${caster['radius']}"/>
+  </joint>
+
+  <!-- Lidar ................................................................... -->
+  <link name="lidar_link">
+    <visual>
+      <geometry><cylinder radius="0.03" length="0.03"/></geometry>
+      <material name="red"><color rgba="0.9 0.2 0.2 1"/></material>
+    </visual>
+  </link>
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="${chassis_x} 0 ${chassis_top_z + lidar['z_offset']}"/>
+  </joint>
+
+  <!-- Gazebo ................................................................. -->
+  <gazebo reference="caster_link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+
+  <gazebo reference="lidar_link">
+    <sensor name="lidar" type="gpu_lidar">
+      <topic>scan</topic>
+      <!-- Gazebo merges fixed-joint links into base_link; this keeps the
+           scan's frame_id as lidar_link. -->
+      <gz_frame_id>lidar_link</gz_frame_id>
+      <always_on>true</always_on>
+      <update_rate>${lidar['update_rate']}</update_rate>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>${lidar['samples']}</samples>
+            <resolution>1</resolution>
+            <!-- Stop one step short of +pi so the first and last beams don't overlap. -->
+            <min_angle>${-pi}</min_angle>
+            <max_angle>${pi - 2 * pi / lidar['samples']}</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>${lidar['range_min']}</min>
+          <max>${lidar['range_max']}</max>
+          <resolution>0.01</resolution>
+        </range>
+      </lidar>
+    </sensor>
+  </gazebo>
+
+  <gazebo>
+    <!-- Turns /cmd_vel into wheel speeds and publishes wheel odometry (odom -> base_link). -->
+    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>${wheel['separation']}</wheel_separation>
+      <wheel_radius>${wheel['radius']}</wheel_radius>
+      <topic>/cmd_vel</topic>
+      <odom_topic>/odom</odom_topic>
+      <tf_topic>/tf</tf_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_link</child_frame_id>
+      <odom_publish_frequency>30</odom_publish_frequency>
+    </plugin>
+
+    <!-- Measured wheel angles and speeds. -->
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <topic>/joint_states</topic>
+    </plugin>
+
+    <!-- Ground truth: the true pose straight from the simulator, in the world frame.
+         Its TF goes to a topic that is not bridged, so it can't fight wheel odometry. -->
+    <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
+      <odom_frame>world</odom_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+      <odom_topic>/ground_truth/odom</odom_topic>
+      <tf_topic>/ground_truth/tf</tf_topic>
+      <odom_publish_frequency>30</odom_publish_frequency>
+    </plugin>
+  </gazebo>
+</robot>

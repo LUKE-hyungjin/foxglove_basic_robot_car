@@ -1,0 +1,15 @@
+# docker compose up                      run the simulation, Foxglove at ws://localhost:8765
+# docker compose exec sim bash           shell into the running simulation (ros2 topic echo ...)
+# docker compose run --rm sim bash       a fresh shell with the workspace built, nothing launched
+services:
+  sim:
+    image: robot-car-sim:dev
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ./robot_car_sim:/ws/src/robot_car_sim
+      - ./scripts:/ws/scripts:ro
+    ports:
+      - "8765:8765"
+    init: true
