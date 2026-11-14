@@ -1,150 +1,41 @@
 <?xml version="1.0"?>
 <!--
-  Basic Robot Car: two driven wheels, one rear caster ball, one 2D lidar.
-  Every number comes from config/robot.yaml.
+  The robot = the Fusion 360 export (basic_robot_car.urdf, made by
+  tools/import_fusion_urdf.py) + the Gazebo parts below. Numbers come from
+  config/robot.yaml.
 
-  Try it on its own:
-    xacro robot_car.urdf.xacro > robot_car.urdf
-    xacro robot_car.urdf.xacro use_fusion_meshes:=true
+  Try it on its own:  xacro robot_car.urdf.xacro > robot_car.urdf
 -->
-<robot name="robot_car" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot name="basic" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- true: draw the robot with meshes exported from Fusion 360 (meshes/*.stl).
-       Collisions stay as simple shapes either way, which keeps physics stable. -->
-  <xacro:arg name="use_fusion_meshes" default="false"/>
-  <xacro:property name="use_fusion_meshes" value="$(arg use_fusion_meshes)"/>
-  <xacro:property name="mesh_dir" value="package://robot_car_sim/meshes"/>
+  <xacro:include filename="$(find robot_car_sim)/urdf/basic_robot_car.urdf"/>
 
   <xacro:property name="robot" value="${xacro.load_yaml('$(find robot_car_sim)/config/robot.yaml')}"/>
-  <xacro:property name="chassis" value="${robot['chassis']}"/>
   <xacro:property name="wheel" value="${robot['wheel']}"/>
-  <xacro:property name="caster" value="${robot['caster']}"/>
   <xacro:property name="lidar" value="${robot['lidar']}"/>
 
-  <!-- base_link is on the ground under the wheel axle midpoint, so the chassis
-       center sits behind it by wheel x_offset. -->
-  <xacro:property name="chassis_x" value="${-wheel['x_offset']}"/>
-  <xacro:property name="chassis_z" value="${chassis['ground_clearance'] + chassis['height'] / 2}"/>
-  <xacro:property name="chassis_top_z" value="${chassis['ground_clearance'] + chassis['height']}"/>
-
-  <xacro:macro name="box_inertia" params="mass x y z">
-    <inertial>
-      <mass value="${mass}"/>
-      <inertia ixx="${mass * (y*y + z*z) / 12}" ixy="0" ixz="0"
-               iyy="${mass * (x*x + z*z) / 12}" iyz="0"
-               izz="${mass * (x*x + y*y) / 12}"/>
-    </inertial>
-  </xacro:macro>
-
-  <!-- Chassis ................................................................ -->
-  <link name="base_link">
-    <visual>
-      <origin xyz="${chassis_x} 0 ${chassis_z}"/>
-      <geometry>
-        <xacro:if value="${use_fusion_meshes}">
-          <mesh filename="${mesh_dir}/chassis.stl"/>
-        </xacro:if>
-        <xacro:unless value="${use_fusion_meshes}">
-          <box size="${chassis['length']} ${chassis['width']} ${chassis['height']}"/>
-        </xacro:unless>
-      </geometry>
-      <material name="blue"><color rgba="0.2 0.4 0.9 1"/></material>
-    </visual>
-    <collision>
-      <origin xyz="${chassis_x} 0 ${chassis_z}"/>
-      <geometry>
-        <box size="${chassis['length']} ${chassis['width']} ${chassis['height']}"/>
-      </geometry>
-    </collision>
-    <inertial>
-      <origin xyz="${chassis_x} 0 ${chassis_z}"/>
-      <mass value="${chassis['mass']}"/>
-      <inertia ixx="${chassis['mass'] * (chassis['width']**2 + chassis['height']**2) / 12}" ixy="0" ixz="0"
-               iyy="${chassis['mass'] * (chassis['length']**2 + chassis['height']**2) / 12}" iyz="0"
-               izz="${chassis['mass'] * (chassis['length']**2 + chassis['width']**2) / 12}"/>
-    </inertial>
-  </link>
-
-  <!-- Driven wheels ........................................................... -->
-  <!-- The joint is rolled -90 deg about X, so the wheel's Z axis (its spin axis
-       and the cylinder's axis) points along +Y. Positive velocity drives forward. -->
-  <xacro:macro name="drive_wheel" params="side y">
-    <link name="${side}_wheel">
-      <visual>
-        <geometry>
-          <xacro:if value="${use_fusion_meshes}">
-            <mesh filename="${mesh_dir}/wheel.stl"/>
-          </xacro:if>
-          <xacro:unless value="${use_fusion_meshes}">
-            <cylinder radius="${wheel['radius']}" length="${wheel['width']}"/>
-          </xacro:unless>
-        </geometry>
-        <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
-      </visual>
-      <collision>
-        <geometry>
-          <cylinder radius="${wheel['radius']}" length="${wheel['width']}"/>
-        </geometry>
-      </collision>
-      <inertial>
-        <mass value="${wheel['mass']}"/>
-        <inertia ixx="${wheel['mass'] * (3 * wheel['radius']**2 + wheel['width']**2) / 12}" ixy="0" ixz="0"
-                 iyy="${wheel['mass'] * (3 * wheel['radius']**2 + wheel['width']**2) / 12}" iyz="0"
-                 izz="${wheel['mass'] * wheel['radius']**2 / 2}"/>
-      </inertial>
-    </link>
-    <joint name="${side}_wheel_joint" type="continuous">
-      <parent link="base_link"/>
-      <child link="${side}_wheel"/>
-      <origin xyz="0 ${y} ${wheel['radius']}" rpy="${-pi / 2} 0 0"/>
-      <axis xyz="0 0 1"/>
-    </joint>
-  </xacro:macro>
-
-  <xacro:drive_wheel side="left" y="${wheel['separation'] / 2}"/>
-  <xacro:drive_wheel side="right" y="${-wheel['separation'] / 2}"/>
-
-  <!-- Rear caster: a ball fixed to the chassis with zero friction, so it slides. -->
-  <link name="caster_link">
-    <visual>
-      <geometry><sphere radius="${caster['radius']}"/></geometry>
-      <material name="grey"><color rgba="0.6 0.6 0.6 1"/></material>
-    </visual>
-    <collision>
-      <geometry><sphere radius="${caster['radius']}"/></geometry>
-    </collision>
-  </link>
-  <joint name="caster_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="caster_link"/>
-    <origin xyz="${chassis_x + caster['x_offset']} 0 ${caster['radius']}"/>
-  </joint>
-
-  <!-- Lidar ................................................................... -->
-  <link name="lidar_link">
-    <visual>
-      <geometry><cylinder radius="0.03" length="0.03"/></geometry>
-      <material name="red"><color rgba="0.9 0.2 0.2 1"/></material>
-    </visual>
-  </link>
-  <joint name="lidar_joint" type="fixed">
-    <parent link="base_link"/>
-    <child link="lidar_link"/>
-    <origin xyz="${chassis_x} 0 ${chassis_top_z + lidar['z_offset']}"/>
-  </joint>
-
-  <!-- Gazebo ................................................................. -->
-  <gazebo reference="caster_link">
+  <!-- Rubber wheels grip; the steel skids must slide or they drag against the drive. -->
+  <gazebo reference="left_wheel_1">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+  </gazebo>
+  <gazebo reference="right_wheel_1">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+  </gazebo>
+  <gazebo reference="support_1">
     <mu1>0.0</mu1>
     <mu2>0.0</mu2>
   </gazebo>
 
-  <gazebo reference="lidar_link">
+  <gazebo reference="lidar_1">
     <sensor name="lidar" type="gpu_lidar">
+      <!-- Scan from the middle of the lidar body, not from its base. -->
+      <pose>0 0 ${lidar['z_offset']} 0 0 0</pose>
       <topic>scan</topic>
       <!-- Gazebo merges fixed-joint links into base_link; this keeps the
-           scan's frame_id as lidar_link. -->
-      <gz_frame_id>lidar_link</gz_frame_id>
+           scan's frame_id as lidar_1. -->
+      <gz_frame_id>lidar_1</gz_frame_id>
       <always_on>true</always_on>
       <update_rate>${lidar['update_rate']}</update_rate>
       <lidar>
@@ -181,9 +72,11 @@
       <odom_publish_frequency>30</odom_publish_frequency>
     </plugin>
 
-    <!-- Measured wheel angles and speeds. -->
+    <!-- Measured wheel angles and speeds. Default is every physics step (1000 Hz),
+         far more than a plot needs. -->
     <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
       <topic>/joint_states</topic>
+      <update_rate>50</update_rate>
     </plugin>
 
     <!-- Ground truth: the true pose straight from the simulator, in the world frame.

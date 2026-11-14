@@ -7,8 +7,8 @@ import os
 import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import AppendEnvironmentVariable, DeclareLaunchArgument, ExecuteProcess
-from launch.substitutions import Command, LaunchConfiguration
+from launch.actions import AppendEnvironmentVariable, ExecuteProcess
+from launch.substitutions import Command
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
@@ -19,17 +19,12 @@ def generate_launch_description():
         robot = yaml.safe_load(f)
 
     robot_description = ParameterValue(
-        Command([
-            "xacro ", os.path.join(share, "urdf", "robot_car.urdf.xacro"),
-            " use_fusion_meshes:=", LaunchConfiguration("use_fusion_meshes"),
-        ]),
+        Command(["xacro ", os.path.join(share, "urdf", "robot_car.urdf.xacro")]),
         value_type=str,
     )
     sim_time = {"use_sim_time": True}
 
     return LaunchDescription([
-        DeclareLaunchArgument("use_fusion_meshes", default_value="false"),
-
         # Gazebo finds model://arena in <share>/models and package://robot_car_sim in <share>/..
         AppendEnvironmentVariable("GZ_SIM_RESOURCE_PATH", os.path.join(share, "models")),
         AppendEnvironmentVariable("GZ_SIM_RESOURCE_PATH", os.path.dirname(share)),
