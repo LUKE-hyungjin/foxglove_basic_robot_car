@@ -81,3 +81,7 @@ docker/, compose.yaml              ROS 2 Jazzy + Gazebo Harmonic container
 - Foxglove 3.5.0 (macOS)
 
 Linux and Windows (WSL2) are not tested yet.
+
+## License
+
+[MIT](LICENSE). This covers the code, the docs, and the Basic Robot Car model files in `fusion/export/` and `robot_car_sim/meshes/`.

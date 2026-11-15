@@ -21,7 +21,7 @@ setup(
     install_requires=["setuptools"],
     zip_safe=True,
     maintainer="hyungjin",
-    maintainer_email="hyungjin.lee@makinarocks.ai",
+    maintainer_email="e93052080@gmail.com",
     description="Basic Robot Car in Gazebo, debugged in Foxglove.",
     license="MIT",
     tests_require=["pytest"],

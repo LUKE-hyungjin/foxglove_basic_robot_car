@@ -3,7 +3,7 @@
   <name>robot_car_sim</name>
   <version>0.1.0</version>
   <description>Basic Robot Car in Gazebo, debugged in Foxglove.</description>
-  <maintainer email="hyungjin.lee@makinarocks.ai">hyungjin</maintainer>
+  <maintainer email="e93052080@gmail.com">hyungjin</maintainer>
   <license>MIT</license>
 
   <exec_depend>rclpy</exec_depend>
