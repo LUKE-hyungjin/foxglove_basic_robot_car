@@ -1,12 +1,12 @@
-# 4. Blender로 경기장 맵 만들기
+# 4. Build the arena map with Blender
 
-이 단계에서는 Blender 스크립트로 6 m × 6 m 경기장을 만들고 STL로 내보냅니다. 마우스로 모델링하지 않고 스크립트로 만들기 때문에, 숫자만 바꿔 다시 실행하면 같은 맵이 정확히 다시 나옵니다.
+In this step, you build a 6 m × 6 m arena with a Blender script and export it as an STL file. A script builds the map instead of mouse modeling, so changing a number and running it again gives exactly the same map every time.
 
-Blender가 없다면 읽기만 하세요. 결과물 `robot_car_sim/models/arena/meshes/arena.stl`은 저장소에 이미 들어 있습니다.
+If you don't have Blender, read this step without running it. The output, `robot_car_sim/models/arena/meshes/arena.stl`, is already in the repository.
 
-## 맵 구성 보기
+## Read the map definition
 
-`blender/make_map.py`의 위쪽에 맵이 숫자로 정의되어 있습니다. 단위는 미터이고, Z축이 위쪽입니다.
+The top of `blender/make_map.py` defines the map in numbers. Units are meters, and Z points up.
 
 ```python
 ARENA_SIZE = 6.0        # inner width/length of the square arena
@@ -28,53 +28,53 @@ CYLINDERS = [
 ]
 ```
 
-로봇은 원점에서 +X 방향을 보고 출발합니다. 그래서 정면 1.3 m 지점에 상자(`box_ahead`)를 두었습니다. 6단계에서 라이다가 이 거리를 정확히 읽는지 확인합니다.
+The robot starts at the origin, facing +X. That is why a box (`box_ahead`) sits 1.3 m straight ahead. In step 6, you check that the lidar reads this distance correctly.
 
-바닥은 이 맵에 넣지 않습니다. Gazebo 월드(`robot_car_sim/worlds/arena.sdf`)가 바닥 평면을 따로 추가합니다.
+The floor is not part of this map. The Gazebo world (`robot_car_sim/worlds/arena.sdf`) adds its own ground plane.
 
-## 맵 내보내기
+## Export the map
 
-저장소 루트에서 Blender를 화면 없이 실행합니다.
+From the repository root, run Blender without a window:
 
 ```bash
 blender -b --factory-startup -P blender/make_map.py
 ```
 
-- `-b`는 화면 없이 실행합니다.
-- `--factory-startup`은 내 Blender 설정을 무시하고 기본 상태로 시작합니다. 그래서 누가 실행해도 결과가 같습니다.
-- `-P`는 스크립트를 실행합니다.
+- `-b` runs without a window.
+- `--factory-startup` ignores your Blender settings and starts from the defaults, so everyone gets the same result.
+- `-P` runs the script.
 
-다음 줄이 보이면 성공입니다.
+The export worked when you see these lines:
 
 ```text
 Info: File exported successfully
 Wrote .../robot_car_sim/models/arena/meshes/arena.stl
 ```
 
-macOS에서 `blender` 명령이 없으면 앱 안의 실행 파일을 직접 부릅니다.
+On macOS, if there is no `blender` command, call the executable inside the app:
 
 ```bash
 /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup -P blender/make_map.py
 ```
 
-## Blender 화면에서 확인하기
+## Look at the map in Blender
 
-화면에서 보고 싶다면 스크립트를 열어 실행합니다.
+To see the map, run the script with a window:
 
 ```bash
 blender --factory-startup -P blender/make_map.py
 ```
 
-벽 4개, 상자 3개, L자 벽, 원기둥 1개가 보입니다.
+You see 4 walls, 3 boxes, an L-shaped wall, and 1 cylinder.
 
-## 직접 바꿔 보기
+## Change it yourself
 
-`BOXES`에 상자를 하나 추가하고 다시 내보내세요. 로봇 출발 지점(원점에서 반지름 0.6 m 이내)은 비워 둡니다.
+Add a box to `BOXES` and export again. Keep the robot's start area clear (within 0.6 m of the origin).
 
 ```python
     ("my_box", 0.0, 1.5, 0.3, 0.3, 45),
 ```
 
-시뮬레이션을 다시 시작하면 Gazebo와 Foxglove에 새 상자가 나타납니다. 두 프로그램 모두 같은 `arena.stl`을 읽기 때문입니다.
+Restart the simulation, and the new box appears in both Gazebo and Foxglove, because both read the same `arena.stl`.
 
-다음 단계: [Gazebo 시뮬레이션 실행하기](05-gazebo-sim.md)
+Next: [Run the Gazebo simulation](05-gazebo-sim.md)

@@ -1,67 +1,67 @@
-# 7. Foxglove로 바퀴 디버그하기
+# 7. Debug the wheels in Foxglove
 
-이 단계에서는 Teleop 패널로 로봇을 움직이면서 세 가지를 확인합니다. 바퀴가 명령대로 도는지, 바퀴 오도메트리가 실제 위치를 따라가는지, 그리고 바퀴 반지름을 잘못 재면 무엇이 틀어지는지입니다.
+In this step, you drive the robot with the Teleop panel and check three things: whether the wheels turn as commanded, whether wheel odometry follows the true position, and what goes wrong when the wheel radius is measured wrong.
 
-6단계처럼 Foxglove가 연결되어 있고 `robot_car_debug.json` 레이아웃이 열려 있어야 합니다.
+As in step 6, Foxglove must be connected with the `robot_car_debug.json` layout open.
 
-## 바퀴 디버그에 쓰는 토픽
+## Topics for wheel debugging
 
-| 토픽 | 만드는 곳 | 내용 |
+| Topic | Published by | Content |
 | --- | --- | --- |
-| `/cmd_vel` | Teleop 패널 | 목표 선속도(`linear.x`)와 각속도(`angular.z`) |
-| `/joint_states` | Gazebo JointStatePublisher | 바퀴의 실제 각도와 각속도 (rad/s) |
-| `/wheel_debug/expected` | `wheel_debug` 노드 | `/cmd_vel`로 계산한 바퀴 각속도 |
-| `/wheel_debug/error` | `wheel_debug` 노드 | 측정 − 기대 |
-| `/odom` | Gazebo DiffDrive | 바퀴 회전량으로 계산한 위치 |
-| `/ground_truth/odom` | Gazebo OdometryPublisher | 시뮬레이터가 아는 실제 위치 |
+| `/cmd_vel` | Teleop panel | Target linear speed (`linear.x`) and angular speed (`angular.z`) |
+| `/joint_states` | Gazebo JointStatePublisher | Actual wheel angles and angular speeds (rad/s) |
+| `/wheel_debug/expected` | `wheel_debug` node | Wheel angular speeds computed from `/cmd_vel` |
+| `/wheel_debug/error` | `wheel_debug` node | Measured − expected |
+| `/odom` | Gazebo DiffDrive | Position computed from wheel rotation |
+| `/ground_truth/odom` | Gazebo OdometryPublisher | True position known to the simulator |
 
-`wheel_debug`는 차동 구동 공식으로 기대 속도를 계산합니다. `v`는 선속도, `ω`는 각속도, `L`은 바퀴 간격, `r`은 바퀴 반지름입니다.
+`wheel_debug` computes the expected speeds with the differential-drive formula. `v` is the linear speed, `ω` the angular speed, `L` the wheel separation, and `r` the wheel radius.
 
 ```text
-왼쪽 바퀴 = (v − ω × L / 2) / r
-오른쪽 바퀴 = (v + ω × L / 2) / r
+left wheel  = (v − ω × L / 2) / r
+right wheel = (v + ω × L / 2) / r
 ```
 
-`L`과 `r`은 `robot_car_sim/config/robot.yaml`에서 읽습니다. DiffDrive 플러그인도 같은 파일을 씁니다.
+`L` and `r` come from `robot_car_sim/config/robot.yaml`. The DiffDrive plugin reads the same file.
 
-## 로봇 움직이기
+## Drive the robot
 
-Teleop 패널의 위쪽 버튼을 누르고 있으면 로봇이 0.2 m/s로 앞으로 갑니다. 왼쪽과 오른쪽 버튼은 0.8 rad/s로 회전합니다.
+While you hold the up button in the Teleop panel, the robot drives forward at 0.2 m/s. The left and right buttons turn it at 0.8 rad/s.
 
-버튼을 떼면 0.5초 안에 로봇이 멈춥니다. Teleop 패널은 버튼을 누르고 있는 동안에만 명령을 보내고, Gazebo의 DiffDrive는 마지막 명령을 계속 유지합니다. 그래서 `cmd_vel_timeout` 노드가 명령이 0.5초 동안 끊기면 정지 명령을 한 번 보냅니다.
+When you release a button, the robot stops within 0.5 seconds. The Teleop panel sends commands only while a button is held, and Gazebo's DiffDrive keeps the last command forever. So the `cmd_vel_timeout` node sends one stop command when `/cmd_vel` is quiet for 0.5 seconds.
 
-Teleop 패널 설정의 **Stop on release**를 **On**으로 바꾸면 버튼을 뗄 때 패널이 직접 정지 명령을 보냅니다. 레이아웃은 이 값을 바꾸지 않습니다(기본값 **Off**). `cmd_vel_timeout`은 Foxglove 연결이 끊긴 경우에도 로봇을 멈추게 합니다.
+If you turn **Stop on release** to **On** in the Teleop panel settings, the panel itself sends a stop command when you release a button. The layout leaves this setting at its default, **Off**. `cmd_vel_timeout` also stops the robot when the Foxglove connection drops.
 
-## 바퀴 속도 그래프 읽기
+## Read the wheel speed plot
 
-위쪽 버튼을 누르고 있는 동안 **바퀴 속도** 그래프를 봅니다.
+Hold the up button and watch the **wheel speed** plot.
 
-- 두 바퀴의 측정값과 기대값이 모두 4.0 rad/s 근처에 겹칩니다. 0.2 m/s ÷ 0.05 m = 4.0 rad/s입니다.
-- 회전 버튼을 누르면 두 바퀴의 부호가 반대가 됩니다. 0.8 rad/s × 0.225 m ÷ 2 ÷ 0.05 m = 1.8 rad/s입니다.
+- The measured and expected speeds of both wheels overlap near 4.0 rad/s, because 0.2 m/s ÷ 0.05 m = 4.0 rad/s.
+- When you press a turn button, the two wheels get opposite signs: 0.8 rad/s × 0.225 m ÷ 2 ÷ 0.05 m = 1.8 rad/s.
 
-**바퀴 오차** 그래프는 거의 0에 붙어 있어야 합니다. 버튼을 누르거나 뗀 직후에 잠깐 튀는 것은 바퀴가 가속하는 동안의 차이입니다.
+The **wheel error** plot stays close to 0. The short spikes right after you press or release a button are the difference while the wheels accelerate.
 
 > [!NOTE]
-> 그래프는 `/joint_states.velocity[0]`(왼쪽)과 `velocity[1]`(오른쪽)처럼 순서로 바퀴를 고릅니다. 이 순서는 `/joint_states`의 `name` 배열 순서와 같습니다. Raw Messages 패널에서 `/joint_states`를 열어 순서를 확인할 수 있습니다.
+> The plots pick each wheel by position, as in `/joint_states.velocity[0]` (left) and `velocity[1]` (right). This order is the order of the `name` array in `/joint_states`. To check the order, open `/joint_states` in a Raw Messages panel.
 
-## 오도메트리와 실제 위치 비교하기
+## Compare odometry with the true position
 
-**odom vs 실제** 그래프는 `/odom`과 `/ground_truth/odom`의 x, y를 함께 그립니다. 로봇을 이리저리 움직여 보면 두 선이 거의 겹칩니다. 회전을 많이 할수록 조금씩 벌어지는데, 바퀴가 바닥에서 미세하게 미끄러지기 때문입니다. 0.2 m/s, 0.5 rad/s로 4초 동안 돌면 오도메트리는 114.6° 돌았다고 하고, 실제로는 117.5° 돕니다.
+The **odom vs truth** plot draws x and y of `/odom` and `/ground_truth/odom` together. As you drive around, the two lines nearly overlap. The more the robot turns, the further they drift apart, because the wheels slip slightly on the floor. Turning at 0.2 m/s and 0.5 rad/s for 4 seconds, odometry reports 114.6°, while the robot really turns 117.5°.
 
-3D 패널에서도 차이가 보입니다. 로봇 모델은 `/odom`이 계산한 위치에 그려지고, 경기장은 실제 좌표에 그려집니다. 오도메트리가 틀어진 만큼 라이다 점이 벽에서 밀려납니다.
+You also see the difference in the 3D panel. The robot model is drawn at the position `/odom` computes, while the arena is drawn at its true coordinates. As odometry drifts, the lidar points shift off the walls by the same amount.
 
-## 바퀴 반지름을 틀리게 넣어 보기
+## Put in a wrong wheel radius
 
-실제 로봇에서 가장 흔한 오도메트리 오류는 바퀴 반지름을 잘못 잰 것입니다. 일부러 만들어 봅니다.
+On a real robot, the most common odometry error is a wrongly measured wheel radius. Make that error on purpose.
 
-`robot_car_sim/config/robot.yaml`에서 반지름을 10% 크게 바꿉니다.
+In `robot_car_sim/config/robot.yaml`, make the radius 10% too large:
 
 ```yaml
 wheel:
   radius: 0.055
 ```
 
-시뮬레이션을 다시 시작하고, 컨테이너에 들어가 1 m 직진을 명령합니다.
+Restart the simulation, enter the container, and command 1 m straight:
 
 ```bash
 docker compose down
@@ -78,17 +78,17 @@ python3 /ws/scripts/check_sim.py drive 0.2 0 5
 /ground_truth/odom: start x=+0.000 y=-0.000  end x=+0.910 y=-0.000 yaw=-0.0 deg  moved 0.910 m, turned -0.0 deg
 ```
 
-결과를 읽어 봅니다.
+Read the result:
 
-- 바퀴 오차는 -0.003 rad/s로 거의 0입니다. DiffDrive와 `wheel_debug`가 같은 틀린 반지름을 쓰기 때문에, 바퀴는 "명령대로" 돌았습니다.
-- `/odom`은 1.000 m를 갔다고 하지만, 실제로는 0.910 m만 갔습니다. 0.05 ÷ 0.055 ≈ 0.909입니다.
+- The wheel error is -0.003 rad/s, nearly 0. DiffDrive and `wheel_debug` use the same wrong radius, so the wheels turned "as commanded".
+- `/odom` reports 1.000 m, but the robot moved only 0.910 m, because 0.05 ÷ 0.055 ≈ 0.909.
 
-바퀴 오차 그래프만 보면 이 문제를 찾을 수 없습니다. 실제 위치와 비교해야 보입니다. 실제 로봇이라면 줄자로 잰 거리나 라이다로 본 벽까지의 거리가 실제 위치 역할을 합니다. Foxglove의 3D 패널에서는 라이다 점이 정면 벽 너머에 찍힙니다. 로봇 모델은 `/odom`이 말하는 1.000 m 지점에 그려지지만, 라이다는 실제 위치인 0.910 m 지점에서 벽까지 거리를 재기 때문입니다.
+The wheel error plot alone can't find this problem. Only a comparison with the true position shows it. On a real robot, a tape-measured distance or the distance to a wall seen by the lidar plays the role of the true position. In the Foxglove 3D panel, the lidar points land behind the wall ahead. The robot model is drawn at the 1.000 m that `/odom` reports, but the lidar measures the wall from the true position at 0.910 m.
 
-확인했으면 반지름을 0.05로 되돌리세요. 원래 값은 Fusion 메시에서 잰 값이므로, 3단계의 가져오기 스크립트를 다시 실행해도 됩니다.
+When you're done, set the radius back to 0.05. The original value was measured from the Fusion meshes, so you can also run the import script from step 3 again:
 
 ```bash
 python3 tools/import_fusion_urdf.py fusion/export/basic_description
 ```
 
-다음 단계: [문제 해결](08-troubleshooting.md)
+Next: [Troubleshooting](08-troubleshooting.md)

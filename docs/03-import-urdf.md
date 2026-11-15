@@ -1,18 +1,18 @@
-# 3. URDF를 시뮬레이션 패키지로 가져오기
+# 3. Import the URDF into the simulation package
 
-Fusion에서 내보낸 URDF는 그대로 Gazebo에 넣으면 제대로 달리지 않습니다. 이 단계에서는 `tools/import_fusion_urdf.py`로 원본을 시뮬레이션용 URDF로 바꾸고, 왜 바꿔야 하는지 확인합니다.
+The URDF that Fusion exports does not drive correctly if you put it straight into Gazebo. In this step, you turn the raw export into a simulation URDF with `tools/import_fusion_urdf.py`, and you see why each change is needed.
 
-원본(`fusion/export/basic_description/`)은 수정하지 않습니다. Fusion에서 다시 내보내면 이 스크립트를 다시 실행하기만 하면 됩니다.
+The raw export (`fusion/export/basic_description/`) stays untouched. When you export from Fusion again, run this script again.
 
-## 스크립트 실행하기
+## Run the script
 
-저장소 루트에서 실행합니다. 호스트의 Python 3.9 이상이면 되고, 추가 패키지는 필요 없습니다.
+Run it from the repository root. It needs Python 3.9 or later on your computer and no extra packages.
 
 ```bash
 python3 tools/import_fusion_urdf.py fusion/export/basic_description
 ```
 
-스크립트는 바꾸는 내용을 한 줄씩 출력합니다.
+The script prints each change on its own line:
 
 ```text
 read    fusion/export/basic_description/basic.urdf
@@ -29,29 +29,29 @@ yaml    wheel.separation = 0.225
 yaml    lidar.z_offset = 0.0125
 ```
 
-두 번 실행해도 결과는 같습니다.
+Running it twice gives the same result.
 
-## 스크립트가 바꾸는 것
+## What the script changes
 
-### 메시 경로를 `package://`로 바꾸기
+### Mesh paths become `package://` paths
 
-원본 URDF는 `meshes/base_link.stl`처럼 상대 경로를 씁니다. ROS에서 URDF는 파일이 아니라 `/robot_description` 토픽의 문자열로 전달되므로, 상대 경로의 기준 폴더가 없습니다. `package://robot_car_sim/meshes/base_link.stl`로 바꾸면 Gazebo와 Foxglove가 모두 패키지에서 메시를 찾습니다.
+The raw URDF uses relative paths such as `meshes/base_link.stl`. In ROS, the URDF travels as a string on the `/robot_description` topic, not as a file, so a relative path has no folder to be relative to. With `package://robot_car_sim/meshes/base_link.stl`, both Gazebo and Foxglove find the mesh in the package.
 
-### 오른쪽 바퀴 축 방향 맞추기
+### The right wheel axis points the same way as the left
 
-원본에서 왼쪽 바퀴 축은 `0 1 0`, 오른쪽 바퀴 축은 `0 -1 0`입니다. Fusion은 조인트를 만든 방향대로 축을 정하기 때문입니다.
+In the raw export, the left wheel axis is `0 1 0` and the right wheel axis is `0 -1 0`. Fusion sets each axis from the direction in which the joint was created.
 
-Gazebo의 DiffDrive 플러그인은 앞으로 갈 때 두 바퀴 조인트에 같은 부호의 속도를 줍니다. 오른쪽 축이 반대이면 오른쪽 바퀴는 뒤로 돌고, 로봇은 제자리에서 회전합니다. 스크립트는 오른쪽 축을 `0 1 0`으로 뒤집습니다. 바퀴는 원통이므로 축을 뒤집어도 모양은 같습니다.
+To drive forward, Gazebo's DiffDrive plugin gives both wheel joints a speed with the same sign. If the right axis points the other way, the right wheel spins backward and the robot turns in place. The script flips the right axis to `0 1 0`. A wheel is a cylinder, so the flip doesn't change its shape.
 
-### 받침이 바닥을 미끄러지게 하기
+### The skids slide on the floor
 
-Basic Robot Car는 바퀴 2개와 앞뒤 받침 2개가 모두 z = 0에서 바닥에 닿습니다. 실제 로봇이라면 받침이 살짝 들려 있거나 미끄러지지만, 시뮬레이터의 강체는 네 점에 무게를 나눠 싣습니다. 그러면 바퀴에 걸리는 무게가 줄어 바퀴가 헛돕니다.
+The two wheels and the two skids of Basic Robot Car all touch the floor at z = 0. On a real robot, the skids sit a little higher or slide. In the simulator, rigid bodies share the weight across all four contacts. The wheels then carry less weight and spin without grip.
 
-스크립트는 받침의 충돌 모양을 받침 끝마다 반지름 1 cm 구 하나로 바꾸고, 바닥에서 1 mm 띄웁니다. 받침의 겉모양(visual)은 그대로입니다. 구 2개는 9,496개 삼각형 메시보다 충돌 계산이 훨씬 가벼워서 라이다 주기도 10 Hz를 유지합니다.
+The script replaces the skid collision shape with one sphere of 1 cm radius at the tip of each skid, 1 mm above the floor. The skid's visual shape stays the same. Two spheres are also much cheaper to collide than a mesh of 9,496 triangles, so the lidar keeps its 10 Hz rate.
 
-### 측정한 값을 `robot.yaml`에 쓰기
+### Measured values go into `robot.yaml`
 
-바퀴 반지름, 바퀴 간격, 라이다 높이를 STL에서 직접 재서 `robot_car_sim/config/robot.yaml`에 씁니다. DiffDrive 플러그인과 바퀴 디버그 노드가 이 파일 하나를 읽으므로, 두 곳의 값이 어긋나지 않습니다.
+The script measures the wheel radius, the wheel separation, and the lidar height directly from the STL files and writes them to `robot_car_sim/config/robot.yaml`. The DiffDrive plugin and the wheel debug node both read this one file, so their values can't disagree.
 
 ```yaml
 wheel:
@@ -61,26 +61,26 @@ lidar:
   z_offset: 0.0125
 ```
 
-## 보정이 필요한 이유를 숫자로 보기
+## Why the fixes matter, in numbers
 
-아래는 각 보정을 빼고 1 m 직진 명령(0.2 m/s로 5초)을 준 결과입니다. 모든 경우에 바퀴는 명령대로 정확히 4.000 rad/s로 돌았습니다. 달라진 것은 바닥과의 접촉뿐입니다.
+Each row drives the robot straight for 1 m (0.2 m/s for 5 seconds) with some fixes left out. In every row, the wheels spun exactly as commanded, at 4.000 rad/s. Only the contact with the floor changed.
 
-| 시뮬레이션에 넣은 URDF | `/odom` 이동 | 실제 이동 |
+| URDF in the simulation | `/odom` moved | Robot really moved |
 | --- | --- | --- |
-| 원본 그대로 | 1.000 m | 0.000 m |
-| 바퀴 축만 고침 | 1.000 m | 0.000 m |
-| 바퀴 축 + 받침 보정 (최종) | 0.999 m | 1.001 m |
+| Raw export | 1.000 m | 0.000 m |
+| Wheel axis fixed only | 1.000 m | 0.000 m |
+| Wheel axis + skid fix (final) | 0.999 m | 1.001 m |
 
-`/odom`은 바퀴가 돈 양으로 계산한 위치라서 바퀴가 헛돌아도 1 m를 갔다고 말합니다. 실제 위치는 시뮬레이터가 알려 주는 `/ground_truth/odom`입니다. 7단계에서 이 두 값을 Foxglove로 직접 비교합니다.
+`/odom` is computed from how far the wheels turned, so it reports 1 m even when the wheels slip. The true position comes from the simulator on `/ground_truth/odom`. In step 7, you compare the two in Foxglove.
 
-## 최종 로봇 모델 보기
+## The final robot model
 
-`robot_car_sim/urdf/robot_car.urdf.xacro`가 최종 로봇입니다. 가져온 URDF를 그대로 포함하고, Gazebo에만 필요한 부분을 덧붙입니다.
+`robot_car_sim/urdf/robot_car.urdf.xacro` is the final robot. It includes the imported URDF as is and adds only what Gazebo needs:
 
-- 바퀴와 받침의 마찰 계수
-- `lidar_1` 링크의 GPU 라이다 센서
-- DiffDrive 플러그인. `/cmd_vel`을 바퀴 속도로 바꾸고 `/odom`을 냅니다.
-- JointStatePublisher 플러그인. 바퀴 각도와 속도를 `/joint_states`로 냅니다.
-- OdometryPublisher 플러그인. 실제 위치를 `/ground_truth/odom`으로 냅니다.
+- Friction for the wheels and the skids
+- A GPU lidar sensor on the `lidar_1` link
+- The DiffDrive plugin. It turns `/cmd_vel` into wheel speeds and publishes `/odom`.
+- The JointStatePublisher plugin. It publishes the wheel angles and speeds on `/joint_states`.
+- The OdometryPublisher plugin. It publishes the true pose on `/ground_truth/odom`.
 
-다음 단계: [Blender로 경기장 맵 만들기](04-blender-map.md)
+Next: [Build the arena map with Blender](04-blender-map.md)

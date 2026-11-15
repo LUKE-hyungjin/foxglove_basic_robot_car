@@ -1,36 +1,38 @@
-# 2. Fusion 360에서 URDF 내보내기
+# 2. Export a URDF from Fusion 360
 
-이 단계에서는 Fusion 360 모델을 URDF 파일 1개와 부품별 STL 파일로 내보냅니다. URDF는 ROS가 로봇의 링크, 조인트, 질량, 모양을 읽는 형식입니다.
+In this step, you export the Fusion 360 model as one URDF file and one STL file per part. URDF is the format ROS uses to read a robot's links, joints, masses, and shapes.
 
-Fusion이 없다면 이 단계는 읽기만 하세요. 내보낸 결과물은 `fusion/export/basic_description/`에 이미 들어 있습니다.
+If you don't have Fusion, read this step without running it. The exported files are already in `fusion/export/basic_description/`.
 
-## 모델 구조 확인하기
+## Check the model's structure
 
-내보내기 스크립트는 모델이 아래 규칙을 지킨다고 가정합니다. Basic Robot Car는 이미 이 규칙대로 만들어져 있습니다.
+The export script expects the model to follow these rules. Basic Robot Car already follows them.
 
-- 모든 부품이 루트 바로 아래의 컴포넌트입니다. 루트에는 바디를 두지 않습니다.
-- 차체 컴포넌트의 이름은 정확히 `base_link`입니다.
-- 부품 사이에는 조인트가 있습니다. 바퀴는 **회전** 조인트, 나머지는 **강체** 조인트입니다.
-- 회전 조인트에 각도 제한이 없으면 URDF에서 `continuous`(무한 회전)가 됩니다. 바퀴에는 제한을 두지 마세요.
+- Every part is a component directly under the root. The root holds no bodies.
+- The chassis component is named exactly `base_link`.
+- Joints connect the parts. The wheels use **Revolute** joints, and the other parts use **Rigid** joints.
+- A revolute joint without angle limits becomes `continuous` (endless rotation) in the URDF. Don't set limits on the wheels.
 
-Basic Robot Car의 구성은 다음과 같습니다.
+Basic Robot Car has these components:
 
-| 컴포넌트 | 역할 | 조인트 |
+| Component | Role | Joint |
 | --- | --- | --- |
-| `base_link` | 20 × 20 cm 차체 | (기준) |
-| `left_wheel` | 지름 10 cm, 폭 2.5 cm 바퀴 | 회전 |
-| `rignt_wheel` | 오른쪽 바퀴 | 회전 |
-| `lidar` | 차체 위 라이다 | 강체 |
-| `support` | 앞뒤로 바닥을 받치는 강철 받침 2개 | 강체 |
+| `base_link` | 20 × 20 cm chassis | (reference) |
+| `left_wheel` | Wheel, 10 cm diameter, 2.5 cm wide | Revolute |
+| `rignt_wheel` | Right wheel | Revolute |
+| `lidar` | Lidar on top of the chassis | Rigid |
+| `support` | Two steel skids that rest on the floor, front and back | Rigid |
 
-## 이름을 ROS에서 쓸 수 있게 바꾸기
+## Rename parts so that ROS can use them
 
-URDF의 링크와 조인트 이름은 ROS 토픽, TF 프레임, Gazebo 플러그인 설정에 그대로 쓰입니다. 공백이나 한글이 들어가면 다루기 어려우므로 영문 소문자와 밑줄로 바꿉니다.
+The URDF's link and joint names become ROS topic names, TF frame names, and Gazebo plugin settings. Names with spaces or non-ASCII characters are hard to work with, so rename them with lowercase letters and underscores.
 
-1. 브라우저 트리에서 `rignt_wheel` 컴포넌트를 `right_wheel`로 이름을 바꿉니다.
-2. 브라우저 트리의 **조인트** 폴더에서 각 조인트의 이름을 바꿉니다.
+1. In the browser tree, rename the `rignt_wheel` component to `right_wheel`.
+2. In the browser tree's **Joints** folder, rename each joint.
 
-| 원래 이름 | 연결된 부품 | 새 이름 |
+Fusion names each new joint after its type and a number, in the language of the UI. This model was built in a Korean UI, so its joints are named 회전 (revolute) and 강체 (rigid).
+
+| Original name | Connected part | New name |
 | --- | --- | --- |
 | 회전 1 | `rignt_wheel` | `right_wheel_joint` |
 | 회전 2 | `left_wheel` | `left_wheel_joint` |
@@ -38,40 +40,40 @@ URDF의 링크와 조인트 이름은 ROS 토픽, TF 프레임, Gazebo 플러그
 | 강체 4 | `support` | `support_joint` |
 
 > [!NOTE]
-> 조인트 이름은 다음 단계의 Gazebo 설정(`left_wheel_joint`, `right_wheel_joint`)과 맞아야 합니다. 링크 이름은 스크립트가 컴포넌트 이름 뒤에 `_1`을 붙여 만듭니다(`right_wheel_1`).
+> The joint names must match the Gazebo settings in the next steps (`left_wheel_joint`, `right_wheel_joint`). The script makes each link name from its component name plus `_1` (`right_wheel_1`).
 
-## 내보내기 스크립트 설치하기
+## Install the export script
 
-[fusion360_urdf_script](https://github.com/LUKE-hyungjin/fusion360_urdf_script)를 받아 Fusion의 스크립트 폴더에 복사합니다.
+Get [fusion360_urdf_script](https://github.com/LUKE-hyungjin/fusion360_urdf_script) and copy it into Fusion's scripts folder.
 
-macOS에서는 다음과 같이 합니다.
+On macOS:
 
 ```bash
 git clone https://github.com/LUKE-hyungjin/fusion360_urdf_script.git
 cp -r fusion360_urdf_script/URDF "$HOME/Library/Application Support/Autodesk/Autodesk Fusion 360/API/Scripts/"
 ```
 
-Windows PowerShell에서는 다음과 같이 합니다.
+In Windows PowerShell:
 
 ```powershell
 git clone https://github.com/LUKE-hyungjin/fusion360_urdf_script.git
 Copy-Item ".\fusion360_urdf_script\URDF\" -Destination "${env:APPDATA}\Autodesk\Autodesk Fusion 360\API\Scripts\" -Recurse
 ```
 
-## 스크립트 실행하기
+## Run the script
 
 > [!WARNING]
-> 스크립트는 STL을 내보내려고 디자인 안에 컴포넌트를 복사하고, 원래 컴포넌트의 이름을 `old_component`로 바꿉니다. 내보낸 뒤에는 디자인을 **저장하지 마세요**. 실행 취소(Cmd+Z)로 되돌리거나 저장하지 않고 닫으세요.
+> To export the STL files, the script copies components inside the design and renames the originals to `old_component`. After the export, **don't save** the design. Undo the changes (Cmd+Z) or close the design without saving.
 
-1. **디자인** 작업공간에서 **유틸리티** 탭을 엽니다. 영어 UI에서는 **UTILITIES** 탭입니다.
-2. **애드인** 패널에서 **스크립트 및 애드인...**을 클릭합니다. 영어 UI에서는 **ADD-INS > Scripts and Add-Ins**입니다.
-3. **스크립트** 목록에서 `URDF`를 선택하고 **실행**을 클릭합니다. 목록에 `URDF`가 없으면 **+** 버튼으로 복사한 `URDF` 폴더를 직접 추가합니다.
-4. 폴더 선택 창에서 결과물을 저장할 폴더를 고릅니다.
-5. `Successfully create URDF file` 메시지가 나오면 끝입니다.
+1. In the **DESIGN** workspace, open the **UTILITIES** tab. In a Korean UI, it is the **유틸리티** tab.
+2. In the **ADD-INS** panel, click **Scripts and Add-Ins**. In a Korean UI, it is **애드인 > 스크립트 및 애드인...**.
+3. In the **Scripts** list, select `URDF` and click **Run**. If `URDF` is not in the list, add the copied `URDF` folder with the **+** button.
+4. In the folder dialog, choose where to save the output.
+5. The export is done when the message `Successfully create URDF file` appears.
 
-## 결과물 확인하기
+## Check the output
 
-선택한 폴더 안에 `<로봇 이름>_description` 폴더가 생깁니다. 로봇 이름은 디자인 이름의 첫 단어입니다. 디자인 이름이 `basic robot car`이므로 로봇 이름은 `basic`입니다.
+The script creates a `<robot name>_description` folder inside the folder you chose. The robot name is the first word of the design name. The design is named `basic robot car`, so the robot name is `basic`.
 
 ```text
 basic_description/
@@ -84,7 +86,7 @@ basic_description/
     support_1.stl
 ```
 
-`basic.urdf`를 열어 바퀴 조인트를 확인합니다.
+Open `basic.urdf` and find a wheel joint:
 
 ```xml
 <joint name="left_wheel_joint" type="continuous">
@@ -95,8 +97,8 @@ basic_description/
 </joint>
 ```
 
-조인트 이름이 영문이고, 종류가 `continuous`이고, 바퀴 중심 높이(`0.05`)가 바퀴 반지름과 같으면 제대로 내보낸 것입니다. 단위는 미터입니다. STL은 밀리미터 단위로 저장되고, URDF가 `scale="0.001 0.001 0.001"`로 미터로 바꿉니다.
+The export is correct when the joint name is in English, the type is `continuous`, and the wheel center height (`0.05`) equals the wheel radius. Units are meters. The STL files are in millimeters, and the URDF converts them to meters with `scale="0.001 0.001 0.001"`.
 
-이 저장소를 직접 따라 한다면, 내보낸 폴더를 `fusion/export/basic_description/`에 덮어씁니다.
+If you follow along with your own export, copy the exported folder over `fusion/export/basic_description/`.
 
-다음 단계: [URDF를 시뮬레이션 패키지로 가져오기](03-import-urdf.md)
+Next: [Import the URDF into the simulation package](03-import-urdf.md)

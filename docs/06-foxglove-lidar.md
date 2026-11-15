@@ -1,18 +1,18 @@
-# 6. Foxglove로 라이다 디버그하기
+# 6. Debug the lidar in Foxglove
 
-이 단계에서는 Foxglove를 시뮬레이션에 연결하고, 준비된 레이아웃으로 라이다 스캔이 경기장 벽과 정확히 겹치는지 확인합니다.
+In this step, you connect Foxglove to the simulation and use the prepared layout to check that the lidar scan lines up with the arena walls.
 
-시뮬레이션이 실행 중이어야 합니다. 꺼져 있다면 `docker compose up`으로 먼저 시작하세요.
+The simulation must be running. If it isn't, start it first with `docker compose up`.
 
-## Foxglove 연결하기
+## Connect Foxglove
 
-1. Foxglove를 열고 **Open connection**을 클릭합니다.
-2. **Foxglove WebSocket**을 선택합니다.
-3. 주소에 `ws://localhost:8765`를 입력하고 **Open**을 클릭합니다.
+1. Open Foxglove and click **Open connection**.
+2. Choose **Foxglove WebSocket**.
+3. Enter `ws://localhost:8765` and click **Open**.
 
-`foxglove_bridge`는 컨테이너의 8765 포트에서 기다리고, `compose.yaml`이 이 포트를 내 컴퓨터로 열어 둡니다.
+`foxglove_bridge` listens on port 8765 in the container, and `compose.yaml` opens that port on your computer.
 
-연결이 안 되면 호스트 터미널에서 브리지를 직접 점검합니다. 이 스크립트는 Foxglove와 같은 방식으로 접속해서 공개된 토픽을 출력합니다.
+If the connection fails, test the bridge from a terminal on your computer. This script connects the same way Foxglove does and prints the topics the bridge offers.
 
 ```bash
 python3 scripts/check_bridge.py
@@ -26,76 +26,78 @@ connected to ws://localhost:8765 (subprotocol foxglove.sdk.v1)
 PASS
 ```
 
-## 레이아웃 가져오기
+While Foxglove is connected, the count is higher. Foxglove's 3D panel adds its own topics, such as `/clicked_point`.
 
-1. 오른쪽 위의 레이아웃 메뉴를 엽니다.
-2. **Import from file...**을 선택합니다.
-3. 저장소의 `foxglove/robot_car_debug.json`을 고릅니다.
+## Import the layout
 
-레이아웃을 가져오면 다음 화면이 나옵니다.
+1. Open the layout menu at the top right.
+2. Choose **Import from file...**.
+3. Choose `foxglove/robot_car_debug.json` in the repository.
 
-![robot_car_debug 레이아웃](images/foxglove-debug.png)
+After the import, you see this screen:
 
-레이아웃은 패널 6개로 되어 있습니다.
+![The robot_car_debug layout](images/foxglove-debug.png)
 
-| 패널 | 보여 주는 것 |
+The layout has 6 panels:
+
+| Panel | What it shows |
 | --- | --- |
-| 3D | 로봇 모델, 라이다 점, 경기장, 오도메트리 |
-| Plot: 바퀴 속도 | 바퀴별 측정 속도와 기대 속도 |
-| Plot: 바퀴 오차 | 측정 속도 − 기대 속도 |
-| Plot: odom vs 실제 | `/odom`과 `/ground_truth/odom`의 x, y |
-| Teleop | 방향 버튼으로 `/cmd_vel` 보내기 |
-| Raw Messages | `/scan` 메시지 원문 |
+| 3D | Robot model, lidar points, arena, odometry |
+| Plot: wheel speed | Measured and expected speed of each wheel |
+| Plot: wheel error | Measured speed − expected speed |
+| Plot: odom vs truth | x and y of `/odom` and `/ground_truth/odom` |
+| Teleop | Sends `/cmd_vel` with arrow buttons |
+| Raw Messages | The raw `/scan` message |
 
-## 3D 패널에서 라이다 보기
+## Look at the lidar in the 3D panel
 
-3D 패널에는 다음이 겹쳐 보입니다.
+The 3D panel shows these on top of each other:
 
-- 주황색 반투명 경기장. `map_marker` 노드가 `/map` 토픽으로 보낸 `arena.stl`입니다.
-- Fusion에서 만든 로봇. `/robot_description`을 읽어 그립니다.
-- 라이다 점. `/scan` 토픽입니다.
+- The semi-transparent orange arena. It is `arena.stl`, published on `/map` by the `map_marker` node.
+- The robot from Fusion. Foxglove draws it from `/robot_description`.
+- The lidar points, from the `/scan` topic.
 
 > [!IMPORTANT]
-> 레이아웃은 3D 패널의 **Scene > Mesh up axis**를 **Z-up**으로 설정합니다. Foxglove는 STL에 방향 정보가 없으면 기본으로 Y축을 위로 보고 메시를 돌려서 그립니다. 그런데 Fusion과 Blender가 내보낸 STL은 ROS 규칙(REP-103)처럼 Z축이 위입니다. 이 값이 **Y-up**이면 경기장이 90° 누워 보이고, 바퀴 메시도 누운 채로 돌아서 축이 틀린 것처럼 보입니다. 이 설정은 Foxglove를 다시 불러와야 적용됩니다.
+> The layout sets the 3D panel's **Scene > Mesh up axis** to **Z-up**. When an STL file carries no orientation, Foxglove assumes by default that Y points up and rotates the mesh. The STL files from Fusion and Blender have Z pointing up, which is the ROS convention (REP-103). With **Y-up**, the arena lies on its side by 90°, and the wheel meshes spin on their sides, so the wheel axes look wrong. Foxglove applies this setting only after a reload.
 
-라이다 점이 경기장 벽의 안쪽 면에 정확히 붙어 있으면 라이다, TF, 맵이 모두 맞는 것입니다. 점이 벽에서 떨어져 있거나 회전되어 있으면 아래를 의심하세요.
+When the lidar points sit exactly on the inner faces of the arena walls, the lidar, the TF tree, and the map all agree. If the points float off the walls or are rotated, suspect these:
 
-- 점 전체가 벽과 평행하게 밀려 있으면 로봇 위치가 틀린 것입니다. 7단계의 오도메트리를 확인하세요.
-- 점 전체가 회전되어 있으면 로봇 방향(yaw)이 틀린 것입니다.
-- 점이 벽 바깥까지 이어지면 맵과 Gazebo 월드가 서로 다른 STL을 쓰는 것입니다.
+- If all the points are shifted parallel to the walls, the robot position is wrong. Check the odometry in step 7.
+- If all the points are rotated, the robot heading (yaw) is wrong.
+- If the points continue past the walls, the map and the Gazebo world use different STL files.
 
 > [!NOTE]
-> 메시가 보이지 않으면 Foxglove가 `package://` 경로의 STL을 받지 못한 것입니다. `foxglove_bridge`는 이 파일을 웹소켓으로 보내 줍니다. `scripts/check_bridge.py` 출력에 `fetchAsset ... bytes` 줄이 있는지 확인하세요.
+> If a mesh doesn't appear, Foxglove could not get the STL at its `package://` path. `foxglove_bridge` sends these files over the WebSocket. Check that the `scripts/check_bridge.py` output has `fetchAsset ... bytes` lines.
 
-## Raw Messages에서 거리 읽기
+## Read ranges in Raw Messages
 
-Raw Messages 패널에서 `/scan` 메시지를 펼칩니다.
+In the Raw Messages panel, expand the `/scan` message.
 
-| 필드 | 값 | 뜻 |
+| Field | Value | Meaning |
 | --- | --- | --- |
-| `header.frame_id` | `lidar_1` | 라이다 링크 프레임 |
-| `angle_min` | -3.1416 | 첫 빔의 각도 (뒤쪽) |
-| `angle_increment` | 0.01745 | 빔 간격 1° |
-| `ranges` | 360개 | 각 빔의 거리 (m) |
+| `header.frame_id` | `lidar_1` | Lidar link frame |
+| `angle_min` | -3.1416 | Angle of the first beam (straight back) |
+| `angle_increment` | 0.01745 | 1° between beams |
+| `ranges` | 360 values | Distance of each beam (m) |
 
-빔 번호 `i`의 각도는 `angle_min + i × angle_increment`입니다. 정면(0°)은 `ranges[180]`입니다. 이 값이 4단계에서 정면에 둔 상자까지의 거리 1.249 m와 같은지 확인하세요.
+The angle of beam `i` is `angle_min + i × angle_increment`. Straight ahead (0°) is `ranges[180]`. While the robot is at its start position, check that this value equals 1.249 m, the distance to the box placed straight ahead in step 4.
 
-## 직접 바꿔 보기
+## Change it yourself
 
-라이다 해상도를 두 배로 올려 봅니다. `robot_car_sim/config/robot.yaml`에서 `samples`를 바꿉니다.
+Double the lidar resolution. In `robot_car_sim/config/robot.yaml`, change `samples`:
 
 ```yaml
 lidar:
   samples: 720
 ```
 
-시뮬레이션을 다시 시작합니다.
+Restart the simulation:
 
 ```bash
 docker compose down
 docker compose up
 ```
 
-`ranges`는 720개가 되고, 빔 간격은 0.5°가 됩니다. 정면은 이제 `ranges[360]`이고, 값은 같은 1.249 m입니다. 3D 패널의 점도 두 배로 촘촘해집니다. 확인했으면 `samples`를 360으로 되돌리세요.
+`ranges` now has 720 values, 0.5° apart. Straight ahead is now `ranges[360]`, and it still reads 1.249 m. The points in the 3D panel are twice as dense. When you're done, set `samples` back to 360.
 
-다음 단계: [Foxglove로 바퀴 디버그하기](07-foxglove-wheels.md)
+Next: [Debug the wheels in Foxglove](07-foxglove-wheels.md)

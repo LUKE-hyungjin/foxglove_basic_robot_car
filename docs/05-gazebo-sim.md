@@ -1,16 +1,16 @@
-# 5. Gazebo 시뮬레이션 실행하기
+# 5. Run the Gazebo simulation
 
-이 단계에서는 명령 하나로 Gazebo, 로봇, ROS 2 브리지, 디버그 노드, Foxglove 브리지를 모두 띄웁니다. 그리고 컨테이너 안에서 토픽이 제대로 나오는지 확인합니다.
+In this step, one command starts Gazebo, the robot, the ROS 2 bridge, the debug nodes, and the Foxglove bridge. Then you check from inside the container that the topics come out correctly.
 
-## 시뮬레이션 시작하기
+## Start the simulation
 
-저장소 루트에서 실행합니다.
+Run this from the repository root:
 
 ```bash
 docker compose up
 ```
 
-컨테이너가 시작되면 패키지를 빌드하고 `ros2 launch robot_car_sim sim.launch.py`를 실행합니다. 다음 줄들이 보이면 준비가 끝났습니다.
+The container builds the package and runs `ros2 launch robot_car_sim sim.launch.py`. The simulation is ready when you see these lines:
 
 ```text
 [foxglove_bridge-9] ... [foxglove_bridge]: Server listening on port 8765
@@ -18,42 +18,42 @@ docker compose up
 [parameter_bridge-4] ... Creating GZ->ROS Bridge: [/scan (gz.msgs.LaserScan) -> /scan (sensor_msgs/msg/LaserScan)] (Lazy 0)
 ```
 
-- `Server listening on port 8765`는 Foxglove가 접속할 준비가 되었다는 뜻입니다.
-- `Entity creation successful`은 로봇이 Gazebo에 나타났다는 뜻입니다.
-- `Creating GZ->ROS Bridge`는 Gazebo 토픽이 ROS 2 토픽으로 연결되었다는 뜻입니다.
+- `Server listening on port 8765` means Foxglove can connect.
+- `Entity creation successful` means the robot appeared in Gazebo.
+- `Creating GZ->ROS Bridge` means a Gazebo topic is now connected to a ROS 2 topic.
 
-아래 경고 두 개는 무시해도 됩니다.
+You can ignore these two warnings:
 
-- `XML Element[gz_frame_id], child of element[sensor], not defined in SDF`는 라이다 프레임 이름을 지정하는 설정입니다. 경고와 달리 실제로 적용됩니다.
-- `KDL does not support a root link with an inertia`는 `robot_state_publisher`의 안내 메시지입니다. TF 계산에는 영향이 없습니다.
+- `XML Element[gz_frame_id], child of element[sensor], not defined in SDF` is about the setting that names the lidar frame. Despite the warning, the setting takes effect.
+- `KDL does not support a root link with an inertia` is a notice from `robot_state_publisher`. It doesn't affect the TF calculation.
 
-Gazebo 화면은 열리지 않습니다. Gazebo를 서버 모드(`gz sim -s`)로만 띄우고, 화면은 Foxglove로 봅니다.
+No Gazebo window opens. Gazebo runs as a server only (`gz sim -s`), and you watch it in Foxglove.
 
-## 실행되는 것
+## What runs
 
-`robot_car_sim/launch/sim.launch.py`가 다음을 실행합니다.
+`robot_car_sim/launch/sim.launch.py` starts these processes:
 
-| 프로세스 | 하는 일 |
+| Process | What it does |
 | --- | --- |
-| `gz sim` | `worlds/arena.sdf` 월드를 물리 엔진과 함께 실행 |
-| `robot_state_publisher` | xacro로 만든 URDF를 `/robot_description`으로 내보내고, 바퀴 TF 계산 |
-| `ros_gz_sim create` | `/robot_description`을 읽어 Gazebo에 로봇 생성 |
-| `parameter_bridge` | `config/bridge.yaml`에 적힌 토픽을 Gazebo와 ROS 2 사이에 연결 |
-| `static_transform_publisher` | `world` → `odom` 고정 변환 |
-| `wheel_debug` | 바퀴 속도 기대값과 오차 계산 |
-| `map_marker` | 경기장 메시를 `/map` 마커로 내보내기 |
-| `cmd_vel_timeout` | `/cmd_vel`이 0.5초 동안 끊기면 정지 명령 보내기 |
-| `foxglove_bridge` | 모든 토픽을 `ws://localhost:8765`로 공개 |
+| `gz sim` | Runs the `worlds/arena.sdf` world with the physics engine |
+| `robot_state_publisher` | Publishes the xacro-built URDF on `/robot_description` and computes the wheel TFs |
+| `ros_gz_sim create` | Reads `/robot_description` and creates the robot in Gazebo |
+| `parameter_bridge` | Connects the topics listed in `config/bridge.yaml` between Gazebo and ROS 2 |
+| `static_transform_publisher` | Publishes the fixed `world` → `odom` transform |
+| `wheel_debug` | Computes the expected wheel speeds and their error |
+| `map_marker` | Publishes the arena mesh as the `/map` marker |
+| `cmd_vel_timeout` | Sends a stop command when `/cmd_vel` is quiet for 0.5 seconds |
+| `foxglove_bridge` | Serves every topic at `ws://localhost:8765` |
 
-## 컨테이너 안에서 토픽 확인하기
+## Check the topics inside the container
 
-새 터미널을 열고 실행 중인 컨테이너에 들어갑니다.
+Open a new terminal and enter the running container:
 
 ```bash
 docker compose exec sim bash
 ```
 
-토픽 목록을 봅니다.
+List the topics:
 
 ```bash
 ros2 topic list
@@ -76,7 +76,7 @@ ros2 topic list
 /wheel_debug/expected
 ```
 
-라이다 주기를 확인합니다. 설정값은 10 Hz입니다. 끝내려면 Ctrl+C를 누르세요.
+Check the lidar rate. The setting is 10 Hz. Press Ctrl+C to stop.
 
 ```bash
 ros2 topic hz /scan
@@ -86,11 +86,11 @@ ros2 topic hz /scan
 average rate: 9.993
 ```
 
-컴퓨터가 다른 일로 바쁘면 9 Hz대로 떨어질 수 있습니다. 시뮬레이터가 실제 시간보다 느리게 돌기 때문입니다.
+If your computer is busy with other work, the rate can drop into the 9 Hz range, because the simulator then runs slower than real time.
 
-## 라이다 값이 맵과 맞는지 확인하기
+## Check that the lidar matches the map
 
-`scripts/check_sim.py scan`은 라이다 빔 360개를 하나씩 `arena.stl`에 직접 광선을 쏴서 구한 거리와 비교합니다.
+`scripts/check_sim.py scan` compares each of the 360 lidar beams with a ray cast straight into `arena.stl`.
 
 ```bash
 python3 /ws/scripts/check_sim.py scan
@@ -107,11 +107,11 @@ robot (ground truth): x=0.000 y=-0.000 yaw=0.0 deg; scan origin in world: x=0.05
 PASS
 ```
 
-정면 거리 1.25 m는 4단계에서 둔 상자 앞면(x = 1.3 m)에서 라이다 위치(x = 0.05 m)를 뺀 값입니다. 좌우 3.0 m는 경기장 벽까지의 거리입니다.
+The 1.25 m to the front is the box face placed in step 4 (x = 1.3 m) minus the lidar position (x = 0.05 m). The 3.0 m to the left and right is the distance to the arena walls.
 
-## 로봇 움직여 보기
+## Drive the robot
 
-`/cmd_vel`로 0.2 m/s 직진 명령을 5초 동안 보내고 결과를 비교합니다.
+Send a 0.2 m/s straight command on `/cmd_vel` for 5 seconds and compare the results:
 
 ```bash
 python3 /ws/scripts/check_sim.py drive 0.2 0 5
@@ -127,24 +127,24 @@ cmd_vel linear.x=0.2 m/s angular.z=0.0 rad/s for 5.0 s sim time
 PASS
 ```
 
-기대 속도 4.000 rad/s는 0.2 m/s를 바퀴 반지름 0.05 m로 나눈 값입니다. 측정 속도는 실행할 때마다 3.997~4.000 rad/s 사이에서 조금씩 다릅니다.
+The expected 4.000 rad/s is 0.2 m/s divided by the 0.05 m wheel radius. The measured speed varies a little between runs, from 3.997 to 4.000 rad/s.
 
-## 전체 점검 한 번에 돌리기
+## Run every check at once
 
-호스트 터미널에서 `scripts/smoke_test.sh`를 실행하면 위 확인과 Foxglove 브리지 접속까지 한 번에 점검합니다. 이 스크립트는 시뮬레이션을 내렸다가 다시 띄웁니다.
+From a terminal on your computer, `scripts/smoke_test.sh` runs the checks above and also connects to the Foxglove bridge. The script stops the simulation and starts it again.
 
 ```bash
 ./scripts/smoke_test.sh
 ```
 
-마지막 줄이 `SMOKE TEST PASSED`이면 모든 점검을 통과한 것입니다.
+Every check passed when the last line is `SMOKE TEST PASSED`.
 
-## 시뮬레이션 끄기
+## Stop the simulation
 
-`docker compose up`을 실행한 터미널에서 Ctrl+C를 누르거나, 다른 터미널에서 실행합니다.
+Press Ctrl+C in the terminal that runs `docker compose up`, or run this in another terminal:
 
 ```bash
 docker compose down
 ```
 
-다음 단계: [Foxglove로 라이다 디버그하기](06-foxglove-lidar.md)
+Next: [Debug the lidar in Foxglove](06-foxglove-lidar.md)

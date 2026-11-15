@@ -1,44 +1,44 @@
-# 8. 문제 해결
+# 8. Troubleshooting
 
-증상별로 원인과 해결 방법을 정리했습니다.
+This page lists each symptom with its cause and its fix.
 
-## Docker와 시뮬레이션
+## Docker and the simulation
 
 ### `failed to connect to the docker API`
 
-Docker Desktop이 실행되어 있지 않습니다. Docker Desktop을 열고, `docker info`가 서버 버전을 출력할 때까지 기다리세요.
+Docker Desktop is not running. Start Docker Desktop and wait until `docker info` prints a server version.
 
 ### `Bind for 0.0.0.0:8765 failed: port is already allocated`
 
-다른 프로그램이나 이전 시뮬레이션이 8765 포트를 쓰고 있습니다. 어떤 컨테이너가 포트를 쓰는지 확인합니다.
+Another program or an earlier simulation uses port 8765. Find the container that holds the port:
 
 ```bash
 docker ps --format '{{.Names}}\t{{.Ports}}'
 ```
 
-이 저장소의 시뮬레이션이 남아 있다면 `docker compose down`으로 끄세요.
+If a simulation from this repository is still running, stop it with `docker compose down`.
 
-### `/scan`이 10 Hz보다 느림
+### `/scan` is slower than 10 Hz
 
-라이다는 CPU로 렌더링되므로, 컴퓨터가 바쁘면 시뮬레이터 전체가 실제 시간보다 느려집니다. 로봇도 Teleop 명령보다 느리게 움직입니다.
+The lidar renders on the CPU, so when your computer is busy, the whole simulator runs slower than real time. The robot also moves slower than the Teleop command.
 
-먼저 CPU를 많이 쓰는 컨테이너가 있는지 봅니다.
+First, check for containers that use a lot of CPU:
 
 ```bash
 docker stats --no-stream --format '{{.Name}}\t{{.CPUPerc}}'
 ```
 
-다른 Gazebo 시뮬레이션 컨테이너가 CPU를 435% 쓰는 동안, 이 시뮬레이션의 실시간 비율은 0.5 근처까지 떨어졌습니다. 그 컨테이너가 꺼지자 Foxglove를 연결한 채로도 0.96~0.99로 돌아왔습니다. 다른 시뮬레이션을 끄거나 Docker Desktop의 CPU 할당을 늘리세요.
+While another Gazebo simulation container used 435% CPU, this simulation's real-time factor dropped to about 0.5. When that container stopped, the factor returned to 0.96~0.99, with Foxglove still connected. Stop the other simulation or give Docker Desktop more CPUs.
 
-실시간 비율은 컨테이너 안에서 볼 수 있습니다. 이 값은 순간값이라 크게 흔들립니다. 측정 중에 0.02에서 5.58까지 튄 적도 있으니, 여러 번 보고 판단하세요.
+You can read the real-time factor inside the container. It is an instantaneous value and jumps a lot, from 0.02 up to 5.58 during one measurement, so read it several times before you judge.
 
 ```bash
 gz topic -e -t /world/arena/stats -n 1 | grep real_time_factor
 ```
 
-### 로봇이 Gazebo에 나타나지 않음
+### The robot doesn't appear in Gazebo
 
-`docker compose up` 로그에서 `Entity creation successful`을 찾으세요. 없다면 `robot_state_publisher`가 URDF를 만들지 못한 것입니다. 컨테이너 안에서 xacro를 직접 실행해 오류를 봅니다.
+Look for `Entity creation successful` in the `docker compose up` log. If it's missing, `robot_state_publisher` could not build the URDF. Run xacro yourself inside a container to see the error:
 
 ```bash
 docker compose run --rm sim bash
@@ -47,55 +47,55 @@ xacro /ws/src/robot_car_sim/urdf/robot_car.urdf.xacro > /tmp/robot.urdf
 
 ## Foxglove
 
-### 연결은 되는데 3D 패널에 로봇이나 맵이 없음
+### Connected, but the 3D panel shows no robot or map
 
-Foxglove는 `package://robot_car_sim/...` 경로의 STL을 `foxglove_bridge`에서 받아 옵니다. 호스트에서 점검 스크립트를 실행하세요.
+Foxglove gets the STL files at `package://robot_car_sim/...` paths from `foxglove_bridge`. Run the check script on your computer:
 
 ```bash
 python3 scripts/check_bridge.py
 ```
 
-`fetchAsset ... bytes` 줄이 두 개 있으면 브리지는 정상입니다. 그래도 안 보이면 3D 패널 설정에서 `/map` 토픽과 로봇 모델 레이어가 켜져 있는지 확인하세요.
+If the output has two `fetchAsset ... bytes` lines, the bridge works. If the meshes still don't appear, check in the 3D panel settings that the `/map` topic and the robot model layer are turned on.
 
-### 경기장이 90° 누워 있고 바퀴가 이상하게 돎
+### The arena lies on its side by 90° and the wheels spin strangely
 
-3D 패널이 STL 메시를 Y축이 위인 것으로 읽고 있습니다. Gazebo 안의 로봇과 맵은 정상입니다. 3D 패널 설정의 **Scene > Mesh up axis**를 **Z-up**으로 바꾸고, Foxglove를 다시 불러오세요(Cmd+R). `foxglove/robot_car_debug.json` 레이아웃은 이 값을 이미 Z-up으로 설정합니다.
+The 3D panel reads the STL meshes as Y-up. The robot and the map inside Gazebo are fine. In the 3D panel settings, set **Scene > Mesh up axis** to **Z-up** and reload Foxglove (Cmd+R). The `foxglove/robot_car_debug.json` layout already sets this to Z-up.
 
-### Teleop 버튼을 눌러도 로봇이 움직이지 않음
+### The robot doesn't move when you press a Teleop button
 
-Teleop 패널의 토픽이 `/cmd_vel`인지 확인하세요. 컨테이너 안에서 명령이 들어오는지 봅니다.
+Check that the Teleop panel's topic is `/cmd_vel`. Then check inside the container that commands arrive:
 
 ```bash
 docker compose exec sim bash
 ros2 topic echo /cmd_vel
 ```
 
-버튼을 누를 때 메시지가 찍히지 않으면 Foxglove 연결 문제입니다.
+If no messages appear when you press a button, the problem is the Foxglove connection.
 
-## Fusion 360 내보내기
+## Fusion 360 export
 
 ### `No module named 'distutils'`
 
-이전 버전의 `fusion360_urdf_script`입니다. Fusion은 이제 Python 3.12 이상을 쓰는데, 이 버전부터 `distutils`가 없습니다. 최신 `main`을 받아 `URDF` 폴더를 다시 복사하세요.
+You have an older version of `fusion360_urdf_script`. Fusion now uses Python 3.12 or later, which no longer has `distutils`. Get the latest `main` and copy the `URDF` folder again.
 
 ### `cannot unpack non-iterable NoneType object`
 
-이전 버전의 `fusion360_urdf_script`가 색상을 영어 속성 이름 `Color`로만 찾았기 때문입니다. 한국어 등 다른 언어 UI의 Fusion에서 이 오류가 납니다. 최신 `main`을 받으세요.
+Older versions of `fusion360_urdf_script` looked up colors only by the English property name `Color`. Fusion with a Korean or other non-English UI raises this error. Get the latest `main`.
 
 ### `There is no base_link. Please set base_link and run again.`
 
-차체 컴포넌트의 이름이 정확히 `base_link`가 아닙니다. 브라우저 트리에서 이름을 바꾸세요.
+The chassis component is not named exactly `base_link`. Rename it in the browser tree.
 
-### 내보낸 뒤 디자인에 `old_component`가 생김
+### `old_component` appears in the design after the export
 
-스크립트가 STL을 내보내려고 컴포넌트를 복사한 흔적입니다. 디자인을 저장하지 말고, 실행 취소하거나 저장하지 않고 닫으세요.
+The script copied components to export the STL files. Don't save the design. Undo the changes, or close the design without saving.
 
-## 로봇 동작
+## Robot behavior
 
-### 로봇이 앞으로 가지 않고 제자리에서 돔
+### The robot turns in place instead of driving forward
 
-오른쪽 바퀴 조인트 축이 왼쪽과 반대 방향입니다. `tools/import_fusion_urdf.py`를 거치지 않은 원본 URDF를 쓰고 있는지 확인하세요. 3단계를 참고하세요.
+The right wheel joint axis points the opposite way from the left one. Check whether you use the raw URDF without running `tools/import_fusion_urdf.py`. See step 3.
 
-### `/odom`은 움직이는데 로봇은 제자리에 있음
+### `/odom` moves, but the robot stays in place
 
-바퀴가 헛돌고 있습니다. 받침이 바퀴와 같은 높이에서 무게를 나눠 받으면 이렇게 됩니다. 3단계의 받침 보정이 적용되었는지 `robot_car_sim/urdf/basic_robot_car.urdf`의 `support_1` 충돌 모양이 구(`sphere`)인지 확인하세요.
+The wheels are slipping. This happens when the skids carry part of the weight at the same height as the wheels. Check that step 3's skid fix is applied: in `robot_car_sim/urdf/basic_robot_car.urdf`, the `support_1` collision shapes must be spheres (`sphere`).
