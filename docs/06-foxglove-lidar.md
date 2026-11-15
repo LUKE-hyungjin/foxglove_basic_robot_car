@@ -28,9 +28,13 @@ PASS
 
 ## 레이아웃 가져오기
 
-1. 상단의 레이아웃 메뉴를 엽니다.
+1. 오른쪽 위의 레이아웃 메뉴를 엽니다.
 2. **Import from file...**을 선택합니다.
 3. 저장소의 `foxglove/robot_car_debug.json`을 고릅니다.
+
+레이아웃을 가져오면 다음 화면이 나옵니다.
+
+![robot_car_debug 레이아웃](images/foxglove-debug.png)
 
 레이아웃은 패널 6개로 되어 있습니다.
 

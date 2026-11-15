@@ -4,10 +4,14 @@ Fusion 360으로 설계한 2륜 로봇 **Basic Robot Car**를 Blender로 만든 
 
 이 튜토리얼을 끝내면 아래 화면을 직접 띄울 수 있습니다.
 
-- 3D 뷰. Fusion에서 만든 로봇이 경기장 메시 위를 달리고, 라이다 점이 벽에 정확히 겹칩니다.
-- 바퀴 그래프. `/cmd_vel` 명령으로 계산한 바퀴 속도와 Gazebo가 측정한 바퀴 속도가 나란히 그려집니다.
-- 오도메트리 그래프. 바퀴 오도메트리(`/odom`)와 시뮬레이터의 실제 위치(`/ground_truth/odom`)가 얼마나 벌어지는지 보입니다.
-- Teleop 패널. 방향 버튼으로 로봇을 움직입니다.
+![Foxglove에서 Basic Robot Car의 라이다와 바퀴를 디버그하는 화면](docs/images/foxglove-debug.png)
+
+- **3D (가운데).** Fusion에서 만든 로봇이 Blender로 만든 경기장 안에 있고, 라이다 점이 벽과 장애물 표면에 겹칩니다.
+- **바퀴 속도 (오른쪽 위).** Gazebo가 측정한 바퀴 속도와 `/cmd_vel`로 계산한 기대 속도를 바퀴별로 그립니다.
+- **바퀴 오차 (오른쪽 두 번째).** 측정 속도에서 기대 속도를 뺀 값입니다. 바퀴가 명령대로 돌면 0에 붙어 있습니다.
+- **오도메트리 (오른쪽 세 번째).** 바퀴 오도메트리(`/odom`)와 시뮬레이터의 실제 위치(`/ground_truth/odom`)를 x, y별로 비교합니다.
+- **Teleop (오른쪽 아래).** 방향 버튼으로 로봇을 움직입니다.
+- **Raw Messages (오른쪽 아래).** `/scan` 메시지 원문입니다. `frame_id`, 각도 범위, 거리 360개를 볼 수 있습니다.
 
 ## 전체 흐름
 
@@ -30,7 +34,10 @@ cd foxglove_basic_robot_car
 docker compose up
 ```
 
-`Server listening on port 8765`가 보이면 Foxglove에서 `ws://localhost:8765`로 연결하고, `foxglove/robot_car_debug.json` 레이아웃을 가져옵니다.
+`Server listening on port 8765`가 보이면 Foxglove를 엽니다.
+
+1. **Open connection**에서 **Foxglove WebSocket**을 고르고 `ws://localhost:8765`로 연결합니다.
+2. 오른쪽 위 레이아웃 메뉴에서 **Import from file...**을 골라 `foxglove/robot_car_debug.json`을 엽니다.
 
 ## 튜토리얼
 
@@ -70,5 +77,6 @@ docker/, compose.yaml              ROS 2 Jazzy + Gazebo Harmonic 컨테이너
 - 컨테이너: ROS 2 Jazzy, Gazebo Harmonic, foxglove_bridge 3.6
 - Fusion 2706.1.17 (내장 Python 3.14), 한국어 UI
 - Blender 5.1.1
+- Foxglove 3.5.0 (macOS)
 
 Linux와 Windows(WSL2)에서는 아직 실행해 보지 않았습니다.
